@@ -32,7 +32,8 @@ export async function POST(req: Request) {
     Mood/Style: ${mood}
     Layout Goal: ${layoutInstruction}
     
-    Your prompt must describe a high-CTR composition, strong focal subject, cinematic lighting, high contrast, rich colors, emotional storytelling, background depth, and clean composition. DO NOT include any text in the image prompt, as text will be added later. Describe the visual scene only.
+    Your prompt must describe a high-CTR composition, strong focal subject, cinematic lighting, high contrast, rich colors, emotional storytelling, background depth, and clean composition.
+    IMPORTANT RULES FOR TEXT: If the user explicitly requests specific text to be written in the image, you MUST include that text in your prompt enclosed in quotes (e.g., The bold text "YOUR TEXT HERE" is prominently displayed). If the user does not mention text, do NOT include any random text.
     Keep the prompt under 800 characters. Return ONLY the raw prompt text, no explanations.`;
 
     const userPromptText = `Input Type: ${inputType}\nInput: ${input}\nGenerate the optimized image prompt now.`;
