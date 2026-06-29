@@ -255,7 +255,7 @@ export default function ThumbnailEnginePage() {
                 </div>
               </Card>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="grid grid-cols-1 gap-6">
                 {/* Prompt Card */}
                 <Card className="shadow-sm">
                   <CardBody className="p-5">
@@ -272,39 +272,6 @@ export default function ThumbnailEnginePage() {
                     </div>
                     <div className="bg-gray-50 p-3 rounded-lg border border-gray-100 text-sm text-gray-600 leading-relaxed max-h-[160px] overflow-y-auto">
                       {result.optimizedPrompt}
-                    </div>
-                  </CardBody>
-                </Card>
-
-                {/* Details Card */}
-                <Card className="shadow-sm">
-                  <CardBody className="p-5 space-y-4">
-                    <h4 className="font-semibold text-gray-900 text-sm mb-3">Generation Details</h4>
-                    <div className="grid grid-cols-2 gap-y-4 text-sm">
-                      <div>
-                        <p className="text-gray-400 text-xs font-semibold uppercase">Model</p>
-                        <p className="text-gray-900 font-medium truncate">{result.model}</p>
-                      </div>
-                      <div>
-                        <p className="text-gray-400 text-xs font-semibold uppercase">Size</p>
-                        <p className="text-gray-900 font-medium">{result.imageSize}</p>
-                      </div>
-                      <div>
-                        <p className="text-gray-400 text-xs font-semibold uppercase">Category</p>
-                        <p className="text-gray-900 font-medium">{category}</p>
-                      </div>
-                      <div>
-                        <p className="text-gray-400 text-xs font-semibold uppercase">Mood</p>
-                        <p className="text-gray-900 font-medium">{mood}</p>
-                      </div>
-                      <div>
-                        <p className="text-gray-400 text-xs font-semibold uppercase">Seed</p>
-                        <p className="text-gray-900 font-medium">{result.seed}</p>
-                      </div>
-                      <div>
-                        <p className="text-gray-400 text-xs font-semibold uppercase">Time</p>
-                        <p className="text-gray-900 font-medium">{result.generationTime}s</p>
-                      </div>
                     </div>
                   </CardBody>
                 </Card>
