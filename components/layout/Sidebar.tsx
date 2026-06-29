@@ -4,7 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
   Youtube, LayoutDashboard, Activity, Lightbulb,
-  Sliders, TrendingUp, Users, Search, LogOut, CheckCircle, Clapperboard, Clock, Image as ImageIcon
+  Sliders, TrendingUp, Users, Search, LogOut, CheckCircle, Clapperboard, Clock, Image as ImageIcon, Shield
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { useRouter } from "next/navigation";
@@ -34,15 +34,19 @@ export function Sidebar() {
   const router = useRouter();
   const [plan, setPlan] = useState<PlanType>("free");
   const [userEmail, setUserEmail] = useState("");
+  const [role, setRole] = useState("user");
 
   useEffect(() => {
     const supabase = createClient();
     supabase.auth.getUser().then(({ data: { user } }) => {
       if (user) {
         setUserEmail(user.user_metadata?.full_name || user.email || "");
-        // Fetch plan
-        supabase.from("profiles").select("plan_type").eq("id", user.id).single()
-          .then(({ data }) => { if (data?.plan_type) setPlan(data.plan_type as PlanType); });
+        // Fetch plan and role
+        supabase.from("profiles").select("plan_type, role").eq("id", user.id).single()
+          .then(({ data }) => { 
+            if (data?.plan_type) setPlan(data.plan_type as PlanType); 
+            if (data?.role) setRole(data.role);
+          });
       }
     });
   }, []);
@@ -80,6 +84,18 @@ export function Sidebar() {
 
       {/* Nav */}
       <nav className="flex-1 px-3 py-3 space-y-0.5 overflow-y-auto">
+        {role === "admin" && (
+          <Link
+            href="/admin"
+            className={cn(
+              "flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors mb-2",
+              pathname.startsWith("/admin") ? "bg-red-50 text-red-700" : "text-red-600 hover:bg-red-50 hover:text-red-700"
+            )}
+          >
+            <Shield className={cn("w-4 h-4", pathname.startsWith("/admin") ? "text-red-600" : "text-red-500")} />
+            Admin Panel
+          </Link>
+        )}
         {nav.map(({ href, icon: Icon, label, highlight }) => {
           const active = pathname === href;
           return (
