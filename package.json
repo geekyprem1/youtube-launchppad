@@ -16,9 +16,12 @@
     "framer-motion": "^12.42.0",
     "lucide-react": "^0.400.0",
     "next": "14.2.5",
+    "p-limit": "^7.3.0",
     "react": "^18",
     "react-dom": "^18",
+    "react-hot-toast": "^2.6.0",
     "recharts": "^2.12.7",
+    "stripe": "^22.3.0",
     "tailwind-merge": "^3.6.0",
     "zod": "^4.4.3",
     "zustand": "^5.0.14"

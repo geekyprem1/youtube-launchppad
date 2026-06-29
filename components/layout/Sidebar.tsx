@@ -126,7 +126,15 @@ export function Sidebar() {
       {/* User + Sign out */}
       <div className="px-3 py-3 border-t border-gray-100 space-y-1">
         {userEmail && (
-          <p className="px-3 text-xs text-gray-500 truncate">{userEmail}</p>
+          <p className="px-3 text-xs text-gray-500 truncate mb-2">{userEmail}</p>
+        )}
+        {plan === "free" && (
+          <Link
+            href="/pricing"
+            className="flex items-center justify-center w-full px-3 py-2 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-lg text-sm font-bold shadow-sm hover:from-blue-700 hover:to-indigo-700 transition-colors mb-2"
+          >
+            Upgrade to Pro
+          </Link>
         )}
         <button
           onClick={signOut}

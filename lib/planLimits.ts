@@ -45,24 +45,13 @@ export async function checkLimit(
 
 export async function incrementUsage(userId: string, feature: FeatureKey) {
   const supabase = await createClient();
-  const today = new Date().toISOString().split("T")[0];
+  const { error } = await supabase.rpc('increment_daily_usage', {
+    p_user_id: userId,
+    p_feature: feature
+  });
 
-  const { data } = await supabase
-    .from("usage_logs")
-    .select("id, count")
-    .eq("user_id", userId)
-    .eq("feature", feature)
-    .eq("date", today)
-    .single();
-
-  if (data) {
-    await supabase
-      .from("usage_logs")
-      .update({ count: data.count + 1 })
-      .eq("id", data.id);
-  } else {
-    await supabase
-      .from("usage_logs")
-      .insert({ user_id: userId, feature, date: today, count: 1 });
+  if (error) {
+    console.error("Failed to increment usage atomically:", error);
+    throw error;
   }
 }

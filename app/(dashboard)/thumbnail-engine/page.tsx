@@ -65,7 +65,8 @@ export default function ThumbnailEnginePage() {
 
       setResult(data);
     } catch (err: any) {
-      setError(err.message);
+      console.error(err);
+      setError(err.message || "Failed to generate thumbnail");
     } finally {
       clearInterval(messageInterval);
       setLoading(false);

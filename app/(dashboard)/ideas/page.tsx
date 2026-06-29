@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import toast from "react-hot-toast";
 import { Header } from "@/components/layout/Header";
 import { Card, CardBody, CardHeader } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
@@ -28,11 +29,16 @@ export default function IdeasPage() {
       });
       const data = await res.json();
       
+      if (!res.ok) {
+        throw new Error(data.error || "Something went wrong.");
+      }
+
       if (data.ideas) {
         setIdeas(data.ideas);
       }
-    } catch (err) {
+    } catch (err: any) {
       console.error(err);
+      toast.error(err.message || "Failed to generate recommendations. Please try again later.");
     } finally {
       setLoading(false);
     }

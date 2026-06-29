@@ -11,10 +11,8 @@ export async function POST(req: NextRequest) {
     const supabase = await createClient();
     const { data: { user } } = await supabase.auth.getUser();
     
-    // Disable auth check for testing/MVP speed if needed, but keeping it as requested.
     if (!user) {
-      // Mock user for testing if no auth token is passed in local dev
-      // return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
     const body = await req.json();

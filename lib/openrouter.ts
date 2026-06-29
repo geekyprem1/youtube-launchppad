@@ -41,6 +41,7 @@ export async function callAI(
       "X-Title": "YT Launchpad",
     },
     body: JSON.stringify(body),
+    signal: AbortSignal.timeout(25000),
   });
 
   if (!response.ok) {

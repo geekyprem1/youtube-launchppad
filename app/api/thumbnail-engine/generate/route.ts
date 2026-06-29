@@ -52,12 +52,13 @@ export async function POST(req: Request) {
     // Step 2: Generate the image using SiliconFlow API
     const imageSize = videoType === "long" ? "1024x576" : "576x1024";
     const apiKey = process.env.SILICONFLOW_API_KEY;
+    const imageModel = process.env.SILICONFLOW_IMAGE_MODEL || "Tongyi-MAI/Z-Image-Turbo";
 
     if (!apiKey) {
       return NextResponse.json({ error: "SiliconFlow API Key not configured" }, { status: 500 });
     }
 
-    const siliconFlowRes = await fetch("https://api.siliconflow.cn/v1/images/generations", {
+    const siliconFlowRes = await fetch("https://api.siliconflow.com/v1/images/generations", {
       method: "POST",
       headers: {
         "Authorization": `Bearer ${apiKey}`,
@@ -65,7 +66,7 @@ export async function POST(req: Request) {
       },
       body: JSON.stringify({
         prompt: optimizedPrompt,
-        model: "Tongyi-MAI/Z-Image-Turbo",
+        model: imageModel,
         image_size: imageSize
       })
     });
@@ -97,7 +98,7 @@ export async function POST(req: Request) {
         mood: mood,
         optimized_prompt: optimizedPrompt,
         image_url: imageUrl,
-        model_name: "Tongyi-MAI/Z-Image-Turbo",
+        model_name: imageModel,
         image_size: imageSize,
         seed: seed,
         generation_time: generationTime
@@ -112,7 +113,7 @@ export async function POST(req: Request) {
     return NextResponse.json({
       imageUrl,
       optimizedPrompt,
-      model: "Tongyi-MAI/Z-Image-Turbo",
+      model: imageModel,
       imageSize,
       seed,
       generationTime,

@@ -1,3 +1,4 @@
+import pLimit from "p-limit";
 import { fetchNicheData, generateRawIdeas } from "./data";
 import { extractFeatures } from "./features";
 import { scoreRecommendation } from "./scoring";
@@ -25,11 +26,8 @@ export async function processRecommendations(request: RecommendationRequest): Pr
   const features = extractFeatures(rawData);
   let ruleVersion = "1.0";
 
-  const formattedIdeas = [];
-  
-  for (let i = 0; i < rawIdeas.length; i++) {
-    const rawIdea = rawIdeas[i];
-
+  const limit = pLimit(3);
+  const formattedIdeas = await Promise.all(rawIdeas.map((rawIdea, i) => limit(async () => {
     // 3. Scoring Engine (Deterministic Math)
     const { opportunity, confidence } = scoreRecommendation(features);
     ruleVersion = opportunity.version;
@@ -67,7 +65,7 @@ export async function processRecommendations(request: RecommendationRequest): Pr
     const subsMin = Math.floor(reachMin * 0.01);
     const subsMax = Math.floor(reachMax * 0.02);
 
-    formattedIdeas.push({
+    return {
       id: (i + 1).toString(),
       topic: rawIdea.topic,
       type: rawIdea.type,
@@ -80,8 +78,8 @@ export async function processRecommendations(request: RecommendationRequest): Pr
         confidence: confidence,
       },
       analysis
-    });
-  }
+    };
+  })));
 
   // 6. Universal Contract Response
   return {
