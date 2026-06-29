@@ -15,8 +15,8 @@ export default function PricingPage() {
     <>
       <Header title="Upgrade to Pro" subtitle="Unlock the full power of CreatorOS AI" />
       
-      <div className="p-8 max-w-7xl mx-auto space-y-8">
-        <div className="grid md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-3 gap-8">
+      <div className="p-4 md:p-8 max-w-7xl mx-auto space-y-8">
+        <div className="grid md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-3 gap-6 md:gap-8">
           
           {plansList.map(([key, plan]) => {
             const isFree = key === "free";
@@ -25,7 +25,7 @@ export default function PricingPage() {
             return (
               <Card key={key} className={cn(
                 "relative transition-all hover:shadow-lg flex flex-col",
-                isPopular ? "border-blue-200 shadow-xl ring-2 ring-blue-500 scale-105 z-10 bg-white" : "border-gray-200 shadow-sm bg-gray-50/50",
+                isPopular ? "border-blue-200 shadow-xl ring-2 ring-blue-500 md:scale-105 z-10 bg-white" : "border-gray-200 shadow-sm bg-gray-50/50",
                 isFree && "opacity-80"
               )}>
                 {isPopular && (

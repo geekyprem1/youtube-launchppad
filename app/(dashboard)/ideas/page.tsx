@@ -48,7 +48,7 @@ export default function IdeasPage() {
     <>
       <Header title="Recommendation Engine" subtitle="AI-driven video opportunities prioritized by ROI and Channel Fit." />
       
-      <div className="p-8 max-w-6xl mx-auto space-y-8">
+      <div className="p-4 md:p-8 max-w-6xl mx-auto space-y-8">
 
         {/* Global AI Command Input for this page */}
         <div className="max-w-2xl mx-auto">

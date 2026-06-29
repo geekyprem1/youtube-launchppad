@@ -57,7 +57,7 @@ export default function PredictorPage() {
     <>
       <Header title="Success Predictor & Experiment Center" subtitle="Predict video success or A/B test ideas before publishing." />
       
-      <div className="p-8 max-w-6xl mx-auto space-y-8">
+      <div className="p-4 md:p-8 max-w-6xl mx-auto space-y-8">
         
         {/* Tabs */}
         <div className="flex gap-2 p-1 bg-gray-100 rounded-lg w-fit">

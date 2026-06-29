@@ -11,6 +11,7 @@ import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { cn } from "@/lib/utils";
 import { PLANS, type PlanType } from "@/lib/plans";
+import { useMobileMenu } from "@/components/layout/MobileMenuProvider";
 
 const nav = [
   { href: "/dashboard", icon: Activity, label: "Channel Engine" },
@@ -35,6 +36,7 @@ export function Sidebar() {
   const [plan, setPlan] = useState<PlanType>("free");
   const [userEmail, setUserEmail] = useState("");
   const [role, setRole] = useState("user");
+  const { isOpen, setIsOpen } = useMobileMenu();
 
   useEffect(() => {
     const supabase = createClient();
@@ -60,7 +62,22 @@ export function Sidebar() {
   const planConfig = PLANS[plan];
 
   return (
-    <aside className="w-60 h-screen bg-white border-r border-gray-200 flex flex-col flex-shrink-0">
+    <>
+      {/* Mobile Backdrop Overlay */}
+      {isOpen && (
+        <div 
+          className="fixed inset-0 bg-black/20 z-40 md:hidden transition-opacity"
+          onClick={() => setIsOpen(false)}
+        />
+      )}
+
+      {/* Sidebar */}
+      <aside 
+        className={cn(
+          "w-60 h-screen bg-white border-r border-gray-200 flex flex-col flex-shrink-0 fixed inset-y-0 left-0 z-50 md:relative transform transition-transform duration-200 ease-in-out",
+          isOpen ? "translate-x-0" : "-translate-x-full md:translate-x-0"
+        )}
+      >
       {/* Logo */}
       <div className="flex items-center gap-2.5 px-5 py-4 border-b border-gray-100">
         <div className="w-8 h-8 bg-gradient-to-br from-blue-600 to-indigo-600 rounded-lg flex items-center justify-center">
@@ -145,5 +162,6 @@ export function Sidebar() {
         </button>
       </div>
     </aside>
+    </>
   );
 }

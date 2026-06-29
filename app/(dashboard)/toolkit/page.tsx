@@ -64,7 +64,7 @@ export default function ToolkitEnginePage() {
         subtitle="Generate optimized YouTube publishing assets in seconds." 
       />
       
-      <div className="p-8 max-w-5xl mx-auto space-y-8">
+      <div className="p-4 md:p-8 max-w-5xl mx-auto space-y-8">
         
         {/* Input Section */}
         <div className="bg-white p-6 rounded-2xl border border-gray-200 shadow-sm space-y-6">

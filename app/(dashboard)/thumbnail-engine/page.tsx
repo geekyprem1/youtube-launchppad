@@ -107,7 +107,7 @@ export default function ThumbnailEnginePage() {
         subtitle="Generate premium YouTube thumbnails optimized for CTR using AI." 
       />
       
-      <div className="p-8 max-w-6xl mx-auto grid grid-cols-1 lg:grid-cols-12 gap-8">
+      <div className="p-4 md:p-8 max-w-6xl mx-auto grid grid-cols-1 lg:grid-cols-12 gap-6 md:gap-8">
         
         {/* Input Panel (Left Column) */}
         <div className="lg:col-span-4 space-y-6">
@@ -207,7 +207,7 @@ export default function ThumbnailEnginePage() {
         <div className="lg:col-span-8">
           
           {loading && (
-            <div className="h-full min-h-[500px] flex flex-col items-center justify-center bg-white rounded-2xl border border-gray-100 shadow-sm p-8 text-center space-y-6">
+            <div className="h-full min-h-[500px] flex flex-col items-center justify-center bg-white rounded-2xl border border-gray-100 shadow-sm p-4 md:p-8 text-center space-y-6">
               <div className="relative w-16 h-16">
                 <div className="absolute inset-0 bg-blue-100 rounded-full animate-ping opacity-75" />
                 <div className="relative flex items-center justify-center w-full h-full bg-blue-600 text-white rounded-full">
@@ -224,7 +224,7 @@ export default function ThumbnailEnginePage() {
           )}
 
           {!loading && !result && (
-            <div className="h-full min-h-[500px] flex flex-col items-center justify-center bg-gray-50/50 rounded-2xl border border-gray-200 border-dashed text-gray-400 p-8 text-center">
+            <div className="h-full min-h-[500px] flex flex-col items-center justify-center bg-gray-50/50 rounded-2xl border border-gray-200 border-dashed text-gray-400 p-4 md:p-8 text-center">
               <ImageIcon className="w-16 h-16 mb-4 opacity-50" />
               <h3 className="text-lg font-semibold text-gray-700 mb-1">No Thumbnail Generated</h3>
               <p className="text-sm max-w-sm">Fill out the details on the left and click generate to create your AI optimized thumbnail.</p>
@@ -236,7 +236,7 @@ export default function ThumbnailEnginePage() {
               
               {/* Image Preview Card */}
               <Card className="overflow-hidden bg-gray-900 border-0 shadow-xl">
-                <div className="p-6 flex flex-col items-center">
+                <div className="p-4 md:p-6 flex flex-col items-center">
                   <div className={`relative rounded-lg overflow-hidden border border-gray-800 shadow-2xl ${videoType === "long" ? "w-full aspect-[16/9]" : "w-[320px] aspect-[9/16]"}`}>
                     <img 
                       src={result.imageUrl} 

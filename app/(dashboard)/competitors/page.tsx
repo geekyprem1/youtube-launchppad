@@ -46,7 +46,7 @@ export default function CompetitorsPage() {
     <>
       <Header title="Competitor Intel" subtitle="Discover what your competitors are NOT doing and steal their audience." />
       
-      <div className="p-8 max-w-6xl mx-auto space-y-8">
+      <div className="p-4 md:p-8 max-w-6xl mx-auto space-y-8">
         
         {/* Quick Analyze */}
         <div className="max-w-2xl mx-auto">
