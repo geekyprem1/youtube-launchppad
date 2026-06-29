@@ -12,6 +12,10 @@ export const RawIdeaSchema = z.object({
   type: z.enum(["Tutorial", "Comparison", "Listicle", "Story", "Review", "Challenge", "News"]),
 });
 
+export const RawIdeaArraySchema = z.object({
+  ideas: z.array(RawIdeaSchema)
+});
+
 export const IdeaAnalysisSchema = z.object({
   why: z.string(),
   strengths: z.array(z.string()),

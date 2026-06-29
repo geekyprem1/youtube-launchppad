@@ -63,6 +63,16 @@ create table if not exists public.retention_analyses (
   created_at timestamptz default now()
 );
 
+create table if not exists public.dashboard_metrics (
+  id uuid default gen_random_uuid() primary key,
+  user_id uuid references auth.users on delete cascade not null,
+  mission jsonb not null default '{}',
+  briefings jsonb not null default '[]',
+  health jsonb not null default '{}',
+  timeline jsonb not null default '[]',
+  created_at timestamptz default now()
+);
+
 -- Auto-create profile on signup
 create or replace function public.handle_new_user()
 returns trigger as $$
@@ -91,6 +101,7 @@ alter table public.thumbnail_analyses enable row level security;
 alter table public.competitors enable row level security;
 alter table public.keyword_searches enable row level security;
 alter table public.retention_analyses enable row level security;
+alter table public.dashboard_metrics enable row level security;
 
 create policy "Users can manage own data" on public.profiles for all using (auth.uid() = id);
 create policy "Users can manage own ideas" on public.ideas for all using (auth.uid() = user_id);
@@ -99,3 +110,4 @@ create policy "Users can manage own thumbnail_analyses" on public.thumbnail_anal
 create policy "Users can manage own competitors" on public.competitors for all using (auth.uid() = user_id);
 create policy "Users can manage own keyword_searches" on public.keyword_searches for all using (auth.uid() = user_id);
 create policy "Users can manage own retention_analyses" on public.retention_analyses for all using (auth.uid() = user_id);
+create policy "Users can manage own dashboard_metrics" on public.dashboard_metrics for all using (auth.uid() = user_id);

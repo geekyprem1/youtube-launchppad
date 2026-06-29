@@ -21,3 +21,18 @@ Analyze this video opportunity based on the provided metrics and return ONLY a v
   "next_step": "The immediate next action the creator must take."
 }`;
 }
+
+export function buildIdeaGenerationPrompt(niche: string) {
+  return `You are an elite YouTube Content Strategist. The creator wants to make videos about: "${niche}".
+Your task is to generate exactly 3 unique, highly clickable, and trending video ideas for this niche.
+
+Return ONLY a valid JSON object with the following schema:
+{
+  "ideas": [
+    {
+      "topic": "The exact video title or topic concept (must be catchy)",
+      "type": "Tutorial" | "Comparison" | "Listicle" | "Story" | "Review" | "Challenge" | "News"
+    }
+  ]
+}`;
+}

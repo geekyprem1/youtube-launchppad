@@ -4,7 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
   Youtube, LayoutDashboard, Activity, Lightbulb,
-  Sliders, TrendingUp, Users, Search, LogOut, CheckCircle
+  Sliders, TrendingUp, Users, Search, LogOut, CheckCircle, Clapperboard, Clock, Image as ImageIcon
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { useRouter } from "next/navigation";
@@ -13,9 +13,15 @@ import { cn } from "@/lib/utils";
 import { PLANS, type PlanType } from "@/lib/plans";
 
 const nav = [
-  { href: "/dashboard", icon: LayoutDashboard, label: "AI Growth Coach" },
+  { href: "/dashboard", icon: Activity, label: "Channel Engine" },
+  { href: "/dashboard/history", icon: Clock, label: "Channel Audits History" },
+  { href: "/video-engine", icon: Clapperboard, label: "Video Engine", highlight: true },
+  { href: "/video-engine/history", icon: Clock, label: "Generation History" },
   { href: "/ideas", icon: Lightbulb, label: "Recommendation Engine", highlight: true },
-  { href: "/channel-audit", icon: Activity, label: "Diagnostics" },
+  { href: "/toolkit", icon: Activity, label: "Toolkit Engine", highlight: true },
+  { href: "/toolkit/history", icon: Clock, label: "Toolkit History" },
+  { href: "/thumbnail-engine", icon: ImageIcon, label: "Thumbnail Pro Engine", highlight: true },
+  { href: "/thumbnail-engine/history", icon: Clock, label: "Thumbnail History" },
   { href: "/predictor", icon: CheckCircle, label: "Success Predictor", highlight: true },
   { href: "/optimize", icon: Sliders, label: "Title & Thumbnail" },
   { href: "/retention", icon: TrendingUp, label: "Retention Analyzer" },

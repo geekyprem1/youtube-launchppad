@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Header } from "@/components/layout/Header";
 import { Card, CardBody, CardHeader } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
@@ -46,8 +46,18 @@ export default function RetentionPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
-  async function analyze() {
-    if (!videoUrl.trim()) return;
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const url = params.get("url");
+    if (url) {
+      setVideoUrl(url);
+      analyze(url);
+    }
+  }, []);
+
+  async function analyze(overrideUrl?: string) {
+    const targetUrl = typeof overrideUrl === "string" ? overrideUrl : videoUrl;
+    if (!targetUrl.trim()) return;
     setLoading(true);
     setError("");
     setResult(null);
@@ -56,7 +66,7 @@ export default function RetentionPage() {
       const res = await fetch("/api/retention", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ videoUrl }),
+        body: JSON.stringify({ videoUrl: targetUrl }),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error);
@@ -84,7 +94,7 @@ export default function RetentionPage() {
                 onKeyDown={(e) => e.key === "Enter" && analyze()}
                 className="flex-1"
               />
-              <Button onClick={analyze} loading={loading} disabled={!videoUrl.trim()}>
+              <Button onClick={() => analyze()} loading={loading} disabled={!videoUrl.trim()}>
                 Analyze
               </Button>
             </div>

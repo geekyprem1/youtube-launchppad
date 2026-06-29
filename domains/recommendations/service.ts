@@ -59,6 +59,14 @@ export async function processRecommendations(request: RecommendationRequest): Pr
       color: v.impact === "strong" ? "text-green-600" : v.impact === "weak" ? "text-orange-500" : "text-blue-600",
     }));
 
+    // Generate dynamic ROI based on scores
+    const reachMin = Math.floor(rawData.searchVolume * (opportunity.total / 100) * 0.2);
+    const reachMax = Math.floor(rawData.searchVolume * (opportunity.total / 100) * 0.8);
+    const reachText = reachMax > 1000 ? `${Math.round(reachMin/1000)}K - ${Math.round(reachMax/1000)}K` : `${reachMin} - ${reachMax}`;
+    
+    const subsMin = Math.floor(reachMin * 0.01);
+    const subsMax = Math.floor(reachMax * 0.02);
+
     formattedIdeas.push({
       id: (i + 1).toString(),
       topic: rawIdea.topic,
@@ -66,9 +74,9 @@ export async function processRecommendations(request: RecommendationRequest): Pr
       opportunity_score: opportunity.total,
       score_breakdown: breakdownUI,
       roi: {
-        reach: "50K - 100K", // Hardcoded mock for MVP, could calculate deterministically
-        subs: "+200 - 500",
-        growth: "High Impact",
+        reach: reachText,
+        subs: `+${subsMin} - ${subsMax}`,
+        growth: opportunity.total > 70 ? "High Impact" : "Moderate Impact",
         confidence: confidence,
       },
       analysis

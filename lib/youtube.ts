@@ -55,7 +55,7 @@ export async function getChannelVideos(uploadsPlaylistId: string, maxResults = 1
   if (!videoIds) return { playlist, stats: null };
 
   const stats = await yt("videos", {
-    part: "statistics,contentDetails",
+    part: "snippet,statistics,contentDetails",
     id: videoIds,
   });
 

@@ -1,3 +1,8 @@
+import { generateAIResponse } from "../../core/openrouter";
+import { validateAIResponse } from "../../core/validation";
+import { buildIdeaGenerationPrompt } from "./prompts/v1";
+import { RawIdeaArraySchema } from "./types";
+
 export interface RawNicheData {
   searchVolume: number;
   competitionLevel: "Low" | "Medium" | "High";
@@ -20,11 +25,29 @@ export async function fetchNicheData(niche: string, channelId?: string): Promise
 }
 
 export async function generateRawIdeas(niche: string): Promise<{ topic: string, type: string }[]> {
-  // In a real scenario, we might use a small fast LLM call here just to brainstorm topics,
-  // OR use a database of trending topics. We'll simulate fetching 3 topics.
-  return [
-    { topic: `How to start with ${niche}`, type: "Tutorial" },
-    { topic: `Top 5 mistakes in ${niche}`, type: "Listicle" },
-    { topic: `The future of ${niche} in 2026`, type: "News" },
-  ];
+  try {
+    const prompt = buildIdeaGenerationPrompt(niche);
+    const aiRawResponse = await generateAIResponse(
+      [{ role: "user", content: prompt }], 
+      { json: true, promptVersion: "ideagen.v1" }
+    );
+
+    const fallback = {
+      ideas: [
+        { topic: `How to start with ${niche}`, type: "Tutorial" },
+        { topic: `Top 5 mistakes in ${niche}`, type: "Listicle" },
+        { topic: `The future of ${niche} in 2026`, type: "News" },
+      ]
+    };
+
+    const validated = validateAIResponse(aiRawResponse, RawIdeaArraySchema, fallback);
+    return validated.ideas;
+  } catch (e) {
+    console.error("AI Idea Generation Failed, using fallback", e);
+    return [
+      { topic: `How to start with ${niche}`, type: "Tutorial" },
+      { topic: `Top 5 mistakes in ${niche}`, type: "Listicle" },
+      { topic: `The future of ${niche} in 2026`, type: "News" },
+    ];
+  }
 }
