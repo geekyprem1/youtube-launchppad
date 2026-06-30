@@ -1,9 +1,11 @@
-import { NextRequest, NextResponse } from "next/server";
+﻿import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { callAI } from "@/lib/openrouter";
 import { safeJsonParse } from "@/lib/utils";
 import { checkLimit, incrementUsage } from "@/lib/planLimits";
 import { UPGRADE_MESSAGES } from "@/lib/plans";
+
+export const maxDuration = 60;
 
 export async function POST(req: NextRequest) {
   try {
@@ -14,17 +16,22 @@ export async function POST(req: NextRequest) {
     const { title } = await req.json();
     if (!title?.trim()) return NextResponse.json({ error: "Title is required" }, { status: 400 });
 
-    const limit = await checkLimit(user.id, "titles_per_day");
-    if (!limit.allowed) {
-      return NextResponse.json({
-        error: UPGRADE_MESSAGES.titles_per_day, limitReached: true,
-        used: limit.used, limit: limit.limit, plan: limit.plan,
-      }, { status: 429 });
+    // Check plan limits (non-fatal if limit check itself errors)
+    try {
+      const limit = await checkLimit(user.id, "titles_per_day");
+      if (!limit.allowed) {
+        return NextResponse.json({
+          error: UPGRADE_MESSAGES.titles_per_day, limitReached: true,
+          used: limit.used, limit: limit.limit, plan: limit.plan,
+        }, { status: 429 });
+      }
+    } catch (limitErr) {
+      console.error("[Titles] checkLimit failed (non-fatal):", limitErr);
     }
 
     const prompt = `You are a YouTube CTR and SEO expert. Analyze this YouTube video title: "${title}"
 
-Provide a comprehensive analysis and return ONLY valid JSON:
+Provide a comprehensive analysis and return ONLY valid JSON (no markdown, no code fences):
 {
   "overall_score": number 0-100,
   "ctr_score": number 0-100,
@@ -58,16 +65,27 @@ Scoring guide:
 
     const result = safeJsonParse(raw, {});
 
-    await incrementUsage(user.id, "titles_per_day");
-    await supabase.from("title_scores").insert({
-      user_id: user.id,
-      title: title.trim(),
-      result,
-    });
+    // Increment usage (non-fatal)
+    try {
+      await incrementUsage(user.id, "titles_per_day");
+    } catch (usageErr) {
+      console.error("[Titles] incrementUsage failed (non-fatal):", usageErr);
+    }
+
+    // Save to DB (non-fatal)
+    try {
+      await supabase.from("title_scores").insert({
+        user_id: user.id,
+        title: title.trim(),
+        result,
+      });
+    } catch (dbErr) {
+      console.error("[Titles] DB save failed (non-fatal):", dbErr);
+    }
 
     return NextResponse.json({ result });
-  } catch (err) {
-    console.error("Titles API error:", err);
-    return NextResponse.json({ error: "Failed to analyze title" }, { status: 500 });
+  } catch (err: any) {
+    console.error("[Titles] Fatal error:", err.message);
+    return NextResponse.json({ error: "Failed to analyze title", details: err.message }, { status: 500 });
   }
 }

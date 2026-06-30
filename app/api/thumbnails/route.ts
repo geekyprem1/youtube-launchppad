@@ -1,7 +1,9 @@
-import { NextRequest, NextResponse } from "next/server";
+﻿import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { callAI, callVisionAI } from "@/lib/openrouter";
 import { safeJsonParse } from "@/lib/utils";
+
+export const maxDuration = 60;
 
 export async function POST(req: NextRequest) {
   try {
@@ -17,7 +19,7 @@ export async function POST(req: NextRequest) {
 
     let raw: string;
 
-    const jsonInstruction = `Return ONLY valid JSON:
+    const jsonInstruction = `Return ONLY valid JSON (no markdown, no code fences):
 {
   "overall_score": number 0-100,
   "text_score": number 0-100,
@@ -62,16 +64,21 @@ ${jsonInstruction}`;
 
     const result = safeJsonParse(raw, {});
 
-    await supabase.from("thumbnail_analyses").insert({
-      user_id: user.id,
-      image_url: imageUrl || null,
-      description: description || null,
-      result,
-    });
+    // Save to DB (non-fatal)
+    try {
+      await supabase.from("thumbnail_analyses").insert({
+        user_id: user.id,
+        image_url: imageUrl || null,
+        description: description || null,
+        result,
+      });
+    } catch (dbErr) {
+      console.error("[Thumbnails] DB save failed (non-fatal):", dbErr);
+    }
 
     return NextResponse.json({ result });
-  } catch (err) {
-    console.error("Thumbnails API error:", err);
-    return NextResponse.json({ error: "Failed to analyze thumbnail" }, { status: 500 });
+  } catch (err: any) {
+    console.error("[Thumbnails] Fatal error:", err.message);
+    return NextResponse.json({ error: "Failed to analyze thumbnail", details: err.message }, { status: 500 });
   }
 }

@@ -15,12 +15,17 @@ export async function POST(req: NextRequest) {
     const { keyword } = await req.json();
     if (!keyword?.trim()) return NextResponse.json({ error: "Keyword is required" }, { status: 400 });
 
-    const limit = await checkLimit(user.id, "keywords_per_day");
-    if (!limit.allowed) {
-      return NextResponse.json({
-        error: UPGRADE_MESSAGES.keywords_per_day, limitReached: true,
-        used: limit.used, limit: limit.limit, plan: limit.plan,
-      }, { status: 429 });
+    // Check plan limits (non-fatal if check itself errors)
+    try {
+      const limit = await checkLimit(user.id, "keywords_per_day");
+      if (!limit.allowed) {
+        return NextResponse.json({
+          error: UPGRADE_MESSAGES.keywords_per_day, limitReached: true,
+          used: limit.used, limit: limit.limit, plan: limit.plan,
+        }, { status: 429 });
+      }
+    } catch (limitErr) {
+      console.error("[Keywords] checkLimit failed (non-fatal):", limitErr);
     }
 
     const ytResults = await searchVideos(keyword, 5);
@@ -67,12 +72,22 @@ Provide comprehensive keyword research. Return ONLY valid JSON:
 
     const result = safeJsonParse(raw, {});
 
-    await incrementUsage(user.id, "keywords_per_day");
-    await supabase.from("keyword_searches").insert({
-      user_id: user.id,
-      keyword: keyword.trim(),
-      result,
-    });
+    // Increment usage (non-fatal)
+    try {
+      await incrementUsage(user.id, "keywords_per_day");
+    } catch (usageErr) {
+      console.error("[Keywords] incrementUsage failed (non-fatal):", usageErr);
+    }
+    // Save to DB (non-fatal)
+    try {
+      await supabase.from("keyword_searches").insert({
+        user_id: user.id,
+        keyword: keyword.trim(),
+        result,
+      });
+    } catch (dbErr) {
+      console.error("[Keywords] DB save failed (non-fatal):", dbErr);
+    }
 
     return NextResponse.json({ result });
   } catch (err) {

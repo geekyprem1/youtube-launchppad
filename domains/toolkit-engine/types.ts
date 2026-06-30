@@ -21,7 +21,7 @@ export const ToolkitKeywordsSchema = z.object({
 });
 
 export const ToolkitResponseSchema = z.object({
-  titles: z.array(ToolkitTitleSchema).length(5),
+  titles: z.array(ToolkitTitleSchema).min(1).max(10),
   description: z.string(),
   keywords: ToolkitKeywordsSchema,
   tags: z.array(z.string()),
