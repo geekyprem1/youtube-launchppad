@@ -27,15 +27,18 @@ export async function POST(req: NextRequest) {
     const body = await req.json();
     const ctx = ContentContextSchema.parse(body);
 
-    // Credit check — skip gracefully if column not yet migrated
+    // Credit check — skip for paid plans, skip gracefully if column not yet migrated
     const { data: profile } = await supabase
       .from("profiles")
-      .select("video_engine_credits")
+      .select("video_engine_credits, plan_type")
       .eq("id", user.id)
       .single();
 
     const credits = profile?.video_engine_credits;
-    if (typeof credits === "number" && credits < 1) {
+    const planType = profile?.plan_type || "free";
+    const isUnlimitedPlan = ["pro", "elite", "creator_pro", "ultimate"].includes(planType);
+
+    if (!isUnlimitedPlan && typeof credits === "number" && credits < 1) {
       return NextResponse.json({ error: "Insufficient credits" }, { status: 402 });
     }
 
@@ -73,7 +76,7 @@ export async function POST(req: NextRequest) {
 
     // Cache + deduct credit only if column exists
     await writeCache(cacheKey, "hooks", { hooks: parsed.hooks });
-    if (typeof credits === "number") {
+    if (!isUnlimitedPlan && typeof credits === "number") {
       await supabase
         .from("profiles")
         .update({ video_engine_credits: credits - 1 })
