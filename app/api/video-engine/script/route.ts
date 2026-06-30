@@ -72,7 +72,7 @@ export async function POST(req: NextRequest) {
         json: true,
         promptVersion: "video-engine.script.v1",
         max_tokens: maxTokens,
-        model: "google/gemini-2.5-flash",
+        model: process.env.OPENROUTER_PRO_MODEL || "google/gemini-2.5-flash",
       }
     );
 

@@ -1,5 +1,5 @@
 const OPENROUTER_BASE_URL = "https://openrouter.ai/api/v1";
-const DEFAULT_MODEL = "deepseek/deepseek-v4-flash";
+const DEFAULT_MODEL = process.env.OPENROUTER_DEFAULT_MODEL || "google/gemini-2.5-flash";
 
 type TextContent = { type: "text"; text: string };
 type ImageContent = { type: "image_url"; image_url: { url: string } };

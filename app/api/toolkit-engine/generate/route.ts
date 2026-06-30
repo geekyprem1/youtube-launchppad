@@ -96,7 +96,7 @@ export async function POST(req: Request) {
         { role: "system", content: systemPrompt },
         { role: "user", content: userPrompt }
       ],
-      { model: "google/gemini-2.5-flash", json: true, max_tokens: 2500 }
+      { model: process.env.OPENROUTER_PRO_MODEL || "google/gemini-2.5-flash", json: true, max_tokens: 2500 }
     );
 
     if (!content) throw new Error("Empty response from AI");

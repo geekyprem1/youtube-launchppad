@@ -12,7 +12,7 @@ export async function generateAIResponse(
   messages: { role: string; content: string }[],
   options: AIRequestOptions = {}
 ): Promise<string> {
-  const model = options.model || "google/gemini-2.5-flash";
+  const model = options.model || process.env.OPENROUTER_DEFAULT_MODEL || "google/gemini-2.5-flash";
   const start = Date.now();
 
   try {
