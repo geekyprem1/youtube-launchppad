@@ -1,4 +1,6 @@
 import { NextResponse } from "next/server";
+
+export const maxDuration = 60; // Vercel: extend timeout to 60s (free tier max)
 import { createClient } from "@/lib/supabase/server";
 import { callAI } from "@/lib/openrouter";
 import { ChannelReportSchema } from "@/domains/channel-engine/types";
@@ -89,7 +91,7 @@ export async function POST(req: Request) {
         { role: "system", content: SYSTEM_PROMPT },
         { role: "user", content: prompt }
       ],
-      { model: "google/gemini-2.5-pro", json: true, max_tokens: 8192 }
+      { model: "google/gemini-2.5-flash", json: true, max_tokens: 4096 }
     );
 
     if (!content) throw new Error("Empty response from AI");

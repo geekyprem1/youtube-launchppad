@@ -1,4 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
+
+export const maxDuration = 60; // Vercel: extend timeout to 60s (free tier max)
 import { createClient } from "@/lib/supabase/server";
 import { generateAIResponse } from "@/core/openrouter";
 import { validateAIResponse } from "@/core/validation";
@@ -70,7 +72,7 @@ export async function POST(req: NextRequest) {
         json: true,
         promptVersion: "video-engine.script.v1",
         max_tokens: maxTokens,
-        model: "google/gemini-2.5-pro",
+        model: "google/gemini-2.5-flash",
       }
     );
 
