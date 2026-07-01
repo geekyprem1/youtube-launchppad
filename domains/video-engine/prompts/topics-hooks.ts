@@ -57,11 +57,29 @@ Create one hook for each of these types: Curiosity, Story, Shocking Fact, Questi
 Each hook must be adapted to the video format (e.g., Shorts hooks should be ultra-punchy and under 10 words).
 Hooks must feel natural in the selected language and tone.
 
+HOOK QUALITY RULES:
+- Think like a TOP YouTuber writing their opening line — not an AI generating a template
+- The hook must make someone STOP scrolling in the first 2 seconds
+- Be SPECIFIC to the topic — no generic hooks that could apply to any video
+- Use the creator's natural voice — contractions, direct address, confident opinions
+
+BAD HOOK EXAMPLES (never write like this):
+❌ "Have you ever wondered about [topic]?" — too generic
+❌ "In today's video, we're going to explore..." — boring, skipped instantly
+❌ "Welcome back! Today we dive deep into..." — cliché YouTuber opener
+❌ "Are you ready to transform your life with...?" — cheesy and unspecific
+
+GOOD HOOK EXAMPLES (write like this):
+✅ "I wasted 3 years doing this wrong. Here's what actually works." — specific, personal, creates urgency
+✅ "Nobody talks about the real reason most people fail at this." — bold, curiosity-inducing
+✅ "I grew from 0 to 50K subscribers doing one thing differently than everyone else." — specific claim, believable
+✅ "Stop. Before you do this, watch the first 60 seconds of this video." — commands attention immediately
+
 Return ONLY a valid JSON object with this exact schema:
 {
   "hooks": [
     {
-      "text": "The full hook line exactly as it would be spoken",
+      "text": "The full hook line exactly as it would be spoken — specific, punchy, human",
       "type": "Curiosity" | "Story" | "Shocking Fact" | "Question" | "FOMO",
       "confidence_score": 0-100
     }

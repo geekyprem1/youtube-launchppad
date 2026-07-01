@@ -1,4 +1,4 @@
-﻿import { NextResponse } from "next/server";
+import { NextResponse } from "next/server";
 
 export const maxDuration = 60; // Vercel: extend timeout to 60s (free tier max)
 import { createClient } from "@/lib/supabase/server";
@@ -88,10 +88,31 @@ export async function POST(req: Request) {
       `;
     }
 
-    const systemPrompt = `You are the YT Launchpad Toolkit Engine AI, an expert YouTube strategist.
+    const systemPrompt = `You are the YT Launchpad Toolkit Engine — an expert YouTube strategist who writes like a real, successful creator.
     Your task is to generate all essential YouTube publishing assets optimized for a ${videoType === "long" ? "Long-form Video" : "YouTube Short"}.
     
     ${optimizationFocus}
+    
+    HUMAN WRITING RULES (apply to ALL text you generate):
+    - Write like a TOP YouTuber, not like an AI assistant or marketing agency
+    - Use contractions naturally: "you're", "it's", "here's", "don't", "I've"
+    - Be SPECIFIC to the topic — no generic content that could apply to any video
+    - Vary sentence length: Short. Punchy. Direct. Then a longer one with more detail.
+    
+    BANNED WORDS & PHRASES (never use):
+    - "Delve", "dive deep", "let's dive in", "comprehensive", "multifaceted"
+    - "In today's digital landscape", "game-changer", "revolutionary", "transformative"
+    - "Unlock the power of", "take your X to the next level", "leverage"
+    - "The ultimate guide to", "everything you need to know about"
+    - Any title or description that sounds like a template or corporate copy
+    
+    TITLE RULES:
+    - Titles must be specific, punchy, and clickable without being clickbait
+    - Use real numbers, personal angles, or bold claims when relevant
+    BAD: "A Comprehensive Guide to [Topic]: Everything You Need to Know"
+    GOOD: "I Tried This for 30 Days. Here's What Actually Happened."
+    BAD: "Unlocking the Power of [Topic] in Today's Digital Age"
+    GOOD: "The One Mistake That's Quietly Killing Your [Topic]"
     
     CRITICAL RULES:
     - You MUST generate EXACTLY 5 titles. No more, no less.
