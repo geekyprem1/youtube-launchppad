@@ -4,7 +4,7 @@ import { useState } from "react";
 import { Header } from "@/components/layout/Header";
 import { Button } from "@/components/ui/Button";
 import { Card, CardBody } from "@/components/ui/Card";
-import { Activity, PlaySquare, Smartphone, Zap, Loader2, Image as ImageIcon, Copy, Download, RefreshCw, Pencil, CheckCircle2 } from "lucide-react";
+import { Activity, PlaySquare, Smartphone, Zap, Loader2, Image as ImageIcon, Copy, Download, RefreshCw, Pencil, CheckCircle2, Sparkles } from "lucide-react";
 
 const CATEGORIES = [
   "Technology", "Finance", "Business", "Gaming", "Education", 
@@ -40,6 +40,7 @@ export default function ThumbnailEnginePage() {
   const [result, setResult] = useState<any>(null);
   const [error, setError] = useState("");
   const [copiedPrompt, setCopiedPrompt] = useState(false);
+  const [enhancing, setEnhancing] = useState(false);
 
   const handleGenerate = async () => {
     if (!input.trim()) return;
@@ -70,6 +71,32 @@ export default function ThumbnailEnginePage() {
     } finally {
       clearInterval(messageInterval);
       setLoading(false);
+    }
+  };
+
+  const handleEnhance = async () => {
+    if (!input.trim() || enhancing) return;
+
+    setEnhancing(true);
+    setError("");
+
+    try {
+      const res = await fetch("/api/thumbnail-engine/enhance", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ videoType, inputType, input, category, mood }),
+      });
+
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Enhance failed");
+
+      setInput(data.enhancedPrompt);
+      setInputType("prompt");
+    } catch (err: any) {
+      console.error(err);
+      setError(err.message || "Failed to enhance prompt");
+    } finally {
+      setEnhancing(false);
     }
   };
 
@@ -140,26 +167,45 @@ export default function ThumbnailEnginePage() {
             <div>
               <div className="flex items-center justify-between mb-3">
                 <label className="block text-sm font-semibold text-gray-900">What is the video about?</label>
-                <select 
-                  value={inputType}
-                  onChange={(e) => setInputType(e.target.value as any)}
-                  className="text-xs bg-gray-50 border border-gray-200 rounded-md px-2 py-1 outline-none focus:ring-1 focus:ring-blue-500"
-                >
-                  <option value="topic">Topic</option>
-                  <option value="title">Title</option>
-                  <option value="prompt">Custom Prompt</option>
-                </select>
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={handleEnhance}
+                    disabled={!input.trim() || enhancing || loading}
+                    className="flex items-center gap-1 text-xs font-semibold text-blue-600 hover:text-blue-700 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                  >
+                    <Sparkles className="w-3.5 h-3.5" />
+                    {enhancing ? "Enhancing..." : "Enhance"}
+                  </button>
+                  <select
+                    value={inputType}
+                    onChange={(e) => setInputType(e.target.value as any)}
+                    className="text-xs bg-gray-50 border border-gray-200 rounded-md px-2 py-1 outline-none focus:ring-1 focus:ring-blue-500"
+                  >
+                    <option value="topic">Topic</option>
+                    <option value="title">Title</option>
+                    <option value="prompt">Custom Prompt</option>
+                  </select>
+                </div>
               </div>
-              <textarea
-                value={input}
-                onChange={(e) => setInput(e.target.value)}
-                placeholder={
-                  inputType === "topic" ? "E.g., Best AI Tools 2026" :
-                  inputType === "title" ? "E.g., Top 10 AI Tools Every Creator Must Know" :
-                  "Describe your exact thumbnail idea..."
-                }
-                className="w-full h-24 px-4 py-3 bg-gray-50 border border-gray-200 focus:border-blue-500 focus:bg-white rounded-xl text-sm transition-all outline-none resize-none"
-              />
+              <div className="relative">
+                <textarea
+                  value={input}
+                  onChange={(e) => setInput(e.target.value)}
+                  disabled={enhancing}
+                  placeholder={
+                    inputType === "topic" ? "E.g., Best AI Tools 2026" :
+                    inputType === "title" ? "E.g., Top 10 AI Tools Every Creator Must Know" :
+                    "Describe your exact thumbnail idea..."
+                  }
+                  className="w-full h-24 px-4 py-3 bg-gray-50 border border-gray-200 focus:border-blue-500 focus:bg-white rounded-xl text-sm transition-all outline-none resize-none disabled:opacity-70"
+                />
+                {enhancing && (
+                  <div className="absolute inset-0 rounded-xl overflow-hidden pointer-events-none">
+                    <div className="w-full h-full bg-gradient-to-r from-gray-200/0 via-white/80 to-gray-200/0 bg-[length:200%_100%] animate-shimmer" />
+                  </div>
+                )}
+              </div>
             </div>
 
             {/* Category & Mood */}

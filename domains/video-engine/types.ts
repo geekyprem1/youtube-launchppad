@@ -21,8 +21,8 @@ export const ToneSchema = z.enum([
 export type Tone = z.infer<typeof ToneSchema>;
 
 export const LanguageSchema = z.enum([
-  "English", "Hindi", "Hinglish", "Spanish", "French",
-  "German", "Japanese", "Tamil", "Telugu", "Bengali",
+  "English", "Hindi", "Spanish", "French",
+  "Italian", "Japanese", "Portuguese", "Chinese",
 ]);
 export type Language = z.infer<typeof LanguageSchema>;
 

@@ -17,6 +17,15 @@ const config: Config = {
           700: "#1d4ed8",
         },
       },
+      keyframes: {
+        shimmer: {
+          "0%": { backgroundPosition: "-200% 0" },
+          "100%": { backgroundPosition: "200% 0" },
+        },
+      },
+      animation: {
+        shimmer: "shimmer 1.5s ease-in-out infinite",
+      },
     },
   },
   plugins: [],

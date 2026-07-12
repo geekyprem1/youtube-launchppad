@@ -6,14 +6,12 @@ import {
 const LANGUAGE_INSTRUCTIONS: Record<Language, string> = {
   English: "Respond entirely in English.",
   Hindi: "सभी आउटपुट हिंदी में दें। Respond entirely in Hindi (Devanagari script).",
-  Hinglish: "Respond in Hinglish — a natural mix of Hindi and English written in Roman (Latin) script. Example: 'Aaj hum baat karenge ek bahut important topic ke baare mein.'",
   Spanish: "Responde completamente en español.",
   French: "Réponds entièrement en français.",
-  German: "Antworte vollständig auf Deutsch.",
+  Italian: "Rispondi interamente in italiano.",
   Japanese: "日本語で回答してください。",
-  Tamil: "அனைத்தும் தமிழில் பதிலளிக்கவும்.",
-  Telugu: "అన్నీ తెలుగులో సమాధానం ఇవ్వండి.",
-  Bengali: "সমস্ত বাংলায় উত্তর দিন।",
+  Portuguese: "Responda inteiramente em português.",
+  Chinese: "请全部用中文回答。",
 };
 
 // ─── Video Type Structure Instructions ───────────────────────────────────────

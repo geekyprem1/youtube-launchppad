@@ -8,16 +8,14 @@ import { Language } from "@/domains/video-engine/types";
 import { cn } from "@/lib/utils";
 
 const LANGUAGES: { value: Language; flag: string; native: string }[] = [
-  { value: "English",  flag: "🇬🇧", native: "English"    },
-  { value: "Hindi",    flag: "🇮🇳", native: "हिंदी"        },
-  { value: "Hinglish", flag: "🇮🇳", native: "Hinglish"    },
-  { value: "Spanish",  flag: "🇪🇸", native: "Español"     },
-  { value: "French",   flag: "🇫🇷", native: "Français"    },
-  { value: "German",   flag: "🇩🇪", native: "Deutsch"     },
-  { value: "Japanese", flag: "🇯🇵", native: "日本語"        },
-  { value: "Tamil",    flag: "🇮🇳", native: "தமிழ்"         },
-  { value: "Telugu",   flag: "🇮🇳", native: "తెలుగు"        },
-  { value: "Bengali",  flag: "🇮🇳", native: "বাংলা"         },
+  { value: "English",    flag: "🇬🇧", native: "English"    },
+  { value: "Hindi",      flag: "🇮🇳", native: "हिंदी"        },
+  { value: "Spanish",    flag: "🇪🇸", native: "Español"     },
+  { value: "French",     flag: "🇫🇷", native: "Français"    },
+  { value: "Italian",    flag: "🇮🇹", native: "Italiano"    },
+  { value: "Japanese",   flag: "🇯🇵", native: "日本語"        },
+  { value: "Portuguese", flag: "🇵🇹", native: "Português"   },
+  { value: "Chinese",    flag: "🇨🇳", native: "中文"          },
 ];
 
 export default function LanguagePage() {

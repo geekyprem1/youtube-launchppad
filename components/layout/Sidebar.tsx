@@ -4,7 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
   Youtube, LayoutDashboard, Activity, Lightbulb,
-  Sliders, TrendingUp, Users, Search, LogOut, CheckCircle, Clapperboard, Clock, Image as ImageIcon, Shield
+  Sliders, TrendingUp, Users, Search, LogOut, CheckCircle, Clapperboard, Clock, Image as ImageIcon, Shield, Mic, Flame, Film
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { useRouter } from "next/navigation";
@@ -18,11 +18,14 @@ const nav = [
   { href: "/dashboard/history", icon: Clock, label: "Channel Audits History" },
   { href: "/video-engine", icon: Clapperboard, label: "Video Engine", highlight: true },
   { href: "/video-engine/history", icon: Clock, label: "Generation History" },
+  { href: "/voice-studio", icon: Mic, label: "Voice Studio", highlight: true },
   { href: "/ideas", icon: Lightbulb, label: "Recommendation Engine", highlight: true },
   { href: "/toolkit", icon: Activity, label: "Toolkit Engine", highlight: true },
   { href: "/toolkit/history", icon: Clock, label: "Toolkit History" },
   { href: "/thumbnail-engine", icon: ImageIcon, label: "Thumbnail Pro Engine", highlight: true },
   { href: "/thumbnail-engine/history", icon: Clock, label: "Thumbnail History" },
+  { href: "/clickbait-thumbnail", icon: Flame, label: "Clickbait Thumbnail Maker", highlight: true },
+  { href: "/video-creation-pro", icon: Film, label: "Video Creation Engine Pro", highlight: true },
   { href: "/predictor", icon: CheckCircle, label: "Success Predictor", highlight: true },
   { href: "/optimize", icon: Sliders, label: "Title & Thumbnail" },
   { href: "/retention", icon: TrendingUp, label: "Retention Analyzer" },

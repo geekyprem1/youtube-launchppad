@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { callAI } from "@/lib/openrouter";
-import { buildThumbnailPromptRequest } from "@/domains/thumbnail-engine/prompt";
+import { buildClickbaitPromptRequest } from "@/domains/clickbait-thumbnail/prompt";
 
 export async function POST(req: Request) {
   try {
@@ -13,20 +13,18 @@ export async function POST(req: Request) {
     }
 
     const body = await req.json();
-    const { videoType, inputType, input, category, mood } = body;
+    const { videoType, topic } = body;
 
-    if (!videoType || !inputType || !input || !category || !mood) {
+    if (!videoType || !topic?.trim()) {
       return NextResponse.json({ error: "Missing required fields" }, { status: 400 });
     }
 
-    // Step 1: Optimize the prompt using Gemini 2.5 Pro
-    const { systemPrompt, userPromptText } = buildThumbnailPromptRequest({
-      videoType, inputType, input, category, mood,
-    });
+    // Step 1: Expand the topic into a maximum-CTR clickbait prompt
+    const { systemPrompt, userPromptText } = buildClickbaitPromptRequest({ videoType, topic });
 
     const startTime = performance.now();
 
-    const optimizedPrompt = await callAI(
+    const clickbaitPrompt = await callAI(
       [
         { role: "system", content: systemPrompt },
         { role: "user", content: userPromptText }
@@ -34,12 +32,12 @@ export async function POST(req: Request) {
       { model: "google/gemini-2.5-flash", max_tokens: 500 }
     );
 
-    if (!optimizedPrompt) throw new Error("Failed to optimize prompt");
+    if (!clickbaitPrompt) throw new Error("Failed to generate clickbait prompt");
 
-    // Step 2: Generate the image using SiliconFlow API
+    // Step 2: Generate the image using SiliconFlow's higher-tier model
     const imageSize = videoType === "long" ? "1024x576" : "576x1024";
     const apiKey = process.env.SILICONFLOW_API_KEY;
-    const imageModel = process.env.SILICONFLOW_IMAGE_MODEL || "Tongyi-MAI/Z-Image-Turbo";
+    const imageModel = process.env.SILICONFLOW_PRO_MODEL || process.env.SILICONFLOW_IMAGE_MODEL || "Tongyi-MAI/Z-Image-Turbo";
 
     if (!apiKey) {
       return NextResponse.json({ error: "SiliconFlow API Key not configured" }, { status: 500 });
@@ -52,7 +50,7 @@ export async function POST(req: Request) {
         "Content-Type": "application/json"
       },
       body: JSON.stringify({
-        prompt: optimizedPrompt,
+        prompt: clickbaitPrompt,
         model: imageModel,
         image_size: imageSize
       })
@@ -75,15 +73,12 @@ export async function POST(req: Request) {
 
     // Step 3: Save history
     const { data: savedData, error: dbError } = await supabase
-      .from("thumbnail_engine_history")
+      .from("clickbait_thumbnail_history")
       .insert({
         user_id: user.id,
         video_type: videoType,
-        input_type: inputType,
-        user_input: input,
-        category: category,
-        mood: mood,
-        optimized_prompt: optimizedPrompt,
+        topic: topic,
+        clickbait_prompt: clickbaitPrompt,
         image_url: imageUrl,
         model_name: imageModel,
         image_size: imageSize,
@@ -94,12 +89,12 @@ export async function POST(req: Request) {
       .single();
 
     if (dbError) {
-      console.error("Failed to save thumbnail history:", dbError);
+      console.error("Failed to save clickbait thumbnail history:", dbError);
     }
 
     return NextResponse.json({
       imageUrl,
-      optimizedPrompt,
+      clickbaitPrompt,
       model: imageModel,
       imageSize,
       seed,
@@ -108,9 +103,9 @@ export async function POST(req: Request) {
     });
 
   } catch (error: any) {
-    console.error("Thumbnail Engine API Error:", error);
+    console.error("Clickbait Thumbnail API Error:", error);
     return NextResponse.json(
-      { error: "Failed to generate thumbnail", details: error.message },
+      { error: "Failed to generate clickbait thumbnail", details: error.message },
       { status: 500 }
     );
   }
