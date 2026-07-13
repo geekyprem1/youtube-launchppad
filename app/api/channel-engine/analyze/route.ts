@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 
 export const maxDuration = 60; // Vercel: extend timeout to 60s (free tier max)
 import { createClient } from "@/lib/supabase/server";
+import { denyUnlessFeature } from "@/lib/requireFeature";
 import { callAI } from "@/lib/openrouter";
 import { ChannelReportSchema } from "@/domains/channel-engine/types";
 import { z } from "zod";
@@ -32,6 +33,8 @@ export async function POST(req: Request) {
     if (authError || !user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
+    const denied = await denyUnlessFeature(user.id, "channel_engine");
+    if (denied) return denied;
 
     const body = await req.json();
     const { channelUrl } = body;

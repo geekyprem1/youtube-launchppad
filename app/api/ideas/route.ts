@@ -1,7 +1,8 @@
-﻿import { NextRequest, NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { processRecommendations } from "@/domains/recommendations/service";
 import { RecommendationRequestSchema } from "@/domains/recommendations/types";
 import { createClient } from "@/lib/supabase/server";
+import { denyUnlessFeature } from "@/lib/requireFeature";
 import { checkLimit, incrementUsage } from "@/lib/planLimits";
 import { UPGRADE_MESSAGES } from "@/lib/plans";
 import { logError } from "@/core/logger";
@@ -17,6 +18,8 @@ export async function POST(req: NextRequest) {
     if (!user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
+    const denied = await denyUnlessFeature(user.id, "ideas");
+    if (denied) return denied;
 
     const body = await req.json();
     const parsedRequest = RecommendationRequestSchema.safeParse(body);

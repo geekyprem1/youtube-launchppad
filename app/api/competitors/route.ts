@@ -3,11 +3,18 @@ import { processCompetitor } from "@/domains/competitors/service";
 import { CompetitorRequestSchema } from "@/domains/competitors/types";
 import { createClient } from "@/lib/supabase/server";
 import { logError } from "@/core/logger";
+import { denyUnlessFeature } from "@/lib/requireFeature";
 
 export async function POST(req: NextRequest) {
   try {
     const supabase = await createClient();
     const { data: { user } } = await supabase.auth.getUser();
+    if (!user) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    const denied = await denyUnlessFeature(user.id, "competitors");
+    if (denied) return denied;
 
     const body = await req.json();
     const parsedRequest = CompetitorRequestSchema.safeParse(body);

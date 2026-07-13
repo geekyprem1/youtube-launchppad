@@ -5,6 +5,12 @@ alter table public.profiles
   add column if not exists role text not null default 'user',
   add column if not exists is_banned boolean not null default false;
 
+-- 1b. FE / OTO access (see also migrations/20260713_unlocked_otos.sql)
+-- plan_type: free | fe | starter | pro | elite | creator_pro | ultimate
+-- unlocked_otos: e.g. {oto2,oto5} — admin manual after LaunchPadJV payment
+alter table public.profiles
+  add column if not exists unlocked_otos text[] not null default '{}';
+
 -- 2. Create a secure function to check admin status bypassing RLS
 create or replace function public.is_admin()
 returns boolean as $$

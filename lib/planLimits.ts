@@ -1,5 +1,9 @@
 import { createClient } from "@/lib/supabase/server";
 import { PLANS, type PlanType, type FeatureKey } from "@/lib/plans";
+import {
+  canAccess,
+  type AccessFeatureKey,
+} from "@/lib/features";
 
 export async function getUserPlan(userId: string): Promise<PlanType> {
   const supabase = await createClient();
@@ -8,7 +12,71 @@ export async function getUserPlan(userId: string): Promise<PlanType> {
     .select("plan_type")
     .eq("id", userId)
     .single();
-  return (data?.plan_type as PlanType) || "free";
+  const plan = (data?.plan_type as PlanType) || "free";
+  // Unknown / mistyped plan keys fall back to free so PLANS[plan] never crashes
+  return plan in PLANS ? plan : "free";
+}
+
+export interface UserAccessProfile {
+  plan: PlanType;
+  unlockedOtos: string[];
+  role: string;
+  isAdmin: boolean;
+}
+
+/** Load plan + OTO unlocks + role for access checks */
+export async function getUserAccessProfile(
+  userId: string
+): Promise<UserAccessProfile> {
+  const supabase = await createClient();
+
+  // Prefer full select; fall back if unlocked_otos column not migrated yet
+  let data: {
+    plan_type?: string | null;
+    unlocked_otos?: string[] | null;
+    role?: string | null;
+  } | null = null;
+
+  const full = await supabase
+    .from("profiles")
+    .select("plan_type, unlocked_otos, role")
+    .eq("id", userId)
+    .single();
+
+  if (full.error) {
+    const partial = await supabase
+      .from("profiles")
+      .select("plan_type, role")
+      .eq("id", userId)
+      .single();
+    data = partial.data;
+  } else {
+    data = full.data;
+  }
+
+  const rawPlan = (data?.plan_type as PlanType) || "free";
+  const plan = rawPlan in PLANS ? rawPlan : "free";
+  const unlockedOtos = Array.isArray(data?.unlocked_otos)
+    ? (data.unlocked_otos as string[])
+    : [];
+  const role = data?.role || "user";
+  const isAdmin = role === "admin";
+
+  return { plan, unlockedOtos, role, isAdmin };
+}
+
+/**
+ * Server-side feature gate helper (Phase E will return 403 from APIs).
+ * Safe if unlocked_otos column is missing until migration runs (treats as []).
+ */
+export async function userCanAccessFeature(
+  userId: string,
+  featureKey: AccessFeatureKey | string
+): Promise<boolean> {
+  const profile = await getUserAccessProfile(userId);
+  return canAccess(profile.plan, profile.unlockedOtos, featureKey, {
+    isAdmin: profile.isAdmin,
+  });
 }
 
 export async function checkLimit(

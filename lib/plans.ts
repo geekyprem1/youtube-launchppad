@@ -1,4 +1,11 @@
-export type PlanType = "free" | "starter" | "pro" | "elite" | "creator_pro" | "ultimate";
+export type PlanType =
+  | "free"
+  | "fe"
+  | "starter"
+  | "pro"
+  | "elite"
+  | "creator_pro"
+  | "ultimate";
 
 export interface PlanConfig {
   name: string;
@@ -14,6 +21,9 @@ export interface PlanConfig {
   features: string[];
 }
 
+/** FE seed credits when admin grants plan_type = 'fe' */
+export const FE_SEED_CREDITS = 100;
+
 export const PLANS: Record<PlanType, PlanConfig> = {
   free: {
     name: "Free",
@@ -26,7 +36,24 @@ export const PLANS: Record<PlanType, PlanConfig> = {
       keywords_per_day: 5,
       competitors_total: 1,
     },
-    features: ["channel_audit", "ideas", "titles", "keywords"],
+    // Signup default — almost everything locked until FE / OTO grant
+    features: [],
+  },
+  /** FrontEnd (FE) — YT Launchpad Core — $17 base paid plan */
+  fe: {
+    name: "FE (FrontEnd)",
+    price: 17,
+    color: "bg-emerald-100 text-emerald-700",
+    limits: {
+      // Daily usage cap ON for FE (not unlimited — OTOs expand later)
+      ideas_per_day: 10,
+      titles_per_day: 10,
+      thumbnails_per_day: 10,
+      keywords_per_day: 10,
+      competitors_total: 0,
+    },
+    // Module access is enforced via lib/features.ts (FE_FEATURES)
+    features: ["video_engine", "thumbnail_basic"],
   },
   starter: {
     name: "Starter",

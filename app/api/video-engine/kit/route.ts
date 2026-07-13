@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
+import { denyUnlessFeature } from "@/lib/requireFeature";
 import { generateAIResponse } from "@/core/openrouter";
 import { validateAIResponse } from "@/core/validation";
 import { buildCacheKey, readCache, writeCache } from "@/domains/video-engine/cache";
@@ -136,6 +137,8 @@ export async function POST(req: NextRequest) {
     const supabase = await createClient();
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    const denied = await denyUnlessFeature(user.id, "video_kit");
+    if (denied) return denied;
 
     const body = await req.json();
     const ctx = ContentContextSchema.parse(body);

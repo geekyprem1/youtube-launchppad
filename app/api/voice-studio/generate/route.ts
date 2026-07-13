@@ -4,6 +4,7 @@ export const maxDuration = 60; // Vercel: extend timeout to 60s (free tier max)
 
 import { randomUUID } from "crypto";
 import { createClient } from "@/lib/supabase/server";
+import { denyUnlessFeature } from "@/lib/requireFeature";
 import { generateSpeech } from "@/core/openrouter/tts";
 import { chunkScript, estimateDurationSeconds, MAX_SCRIPT_CHARS } from "@/domains/voice-studio/chunk";
 import { isValidVoice, DEFAULT_VOICE } from "@/domains/voice-studio/voices";
@@ -14,6 +15,8 @@ export async function POST(req: NextRequest) {
     const supabase = await createClient();
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    const denied = await denyUnlessFeature(user.id, "voice_studio");
+    if (denied) return denied;
 
     const body = await req.json();
     const script = typeof body.script === "string" ? body.script.trim() : "";

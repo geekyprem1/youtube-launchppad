@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
+import { denyUnlessFeature } from "@/lib/requireFeature";
 
 const DEFAULT_METRICS = {
   mission: {
@@ -44,6 +45,8 @@ export async function GET(req: NextRequest) {
     if (!user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
+    const denied = await denyUnlessFeature(user.id, "channel_engine");
+    if (denied) return denied;
 
     const { data: existingMetrics, error } = await supabase
       .from("dashboard_metrics")

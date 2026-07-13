@@ -1,5 +1,6 @@
-﻿import { NextRequest, NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
+import { denyUnlessFeature } from "@/lib/requireFeature";
 import { callAI, callVisionAI } from "@/lib/openrouter";
 import { safeJsonParse } from "@/lib/utils";
 
@@ -10,6 +11,8 @@ export async function POST(req: NextRequest) {
     const supabase = await createClient();
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    const denied = await denyUnlessFeature(user.id, "optimize");
+    if (denied) return denied;
 
     const { imageUrl, description } = await req.json();
 

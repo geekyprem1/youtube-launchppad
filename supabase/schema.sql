@@ -8,6 +8,13 @@ create table if not exists public.profiles (
   created_at timestamptz default now()
 );
 
+-- profiles extensions (apply these scripts too on fresh installs):
+--   plan_type              → usage_schema.sql
+--   role / is_banned       → admin_schema.sql
+--   unlocked_otos          → migrations/20260713_unlocked_otos.sql (or fe_oto_access_schema.sql)
+--   video_engine_credits   → video_engine_schema.sql
+--   stripe_*               → migrations/20260629_add_stripe_fields.sql
+
 create table if not exists public.ideas (
   id uuid default gen_random_uuid() primary key,
   user_id uuid references auth.users on delete cascade not null,

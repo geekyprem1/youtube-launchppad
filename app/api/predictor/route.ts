@@ -4,11 +4,18 @@ import { PredictionRequestSchema } from "@/domains/prediction/types";
 import { createClient } from "@/lib/supabase/server";
 import { logError } from "@/core/logger";
 import { incrementUsage } from "@/lib/planLimits";
+import { denyUnlessFeature } from "@/lib/requireFeature";
 
 export async function POST(req: NextRequest) {
   try {
     const supabase = await createClient();
     const { data: { user } } = await supabase.auth.getUser();
+    if (!user) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    const denied = await denyUnlessFeature(user.id, "predictor");
+    if (denied) return denied;
 
     const body = await req.json();
     const parsedRequest = PredictionRequestSchema.safeParse(body);

@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
+import { denyUnlessFeature } from "@/lib/requireFeature";
 import { callAI } from "@/lib/openrouter";
 import { searchVideos } from "@/lib/youtube";
 import { safeJsonParse } from "@/lib/utils";
@@ -11,6 +12,8 @@ export async function POST(req: NextRequest) {
     const supabase = await createClient();
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    const denied = await denyUnlessFeature(user.id, "keywords");
+    if (denied) return denied;
 
     const { keyword } = await req.json();
     if (!keyword?.trim()) return NextResponse.json({ error: "Keyword is required" }, { status: 400 });
@@ -101,6 +104,8 @@ export async function GET() {
     const supabase = await createClient();
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    const denied = await denyUnlessFeature(user.id, "keywords");
+    if (denied) return denied;
 
     const { data } = await supabase
       .from("keyword_searches")

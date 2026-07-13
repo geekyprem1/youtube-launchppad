@@ -1,8 +1,13 @@
 -- Run this in Supabase SQL Editor AFTER the main schema.sql
 
 -- Add plan_type to profiles
+-- Values: free (signup) | fe (FE $17 base) | legacy starter/pro/elite/creator_pro/ultimate
 alter table public.profiles
   add column if not exists plan_type text not null default 'free';
+
+-- OTO unlocks (admin manual). Also: migrations/20260713_unlocked_otos.sql
+alter table public.profiles
+  add column if not exists unlocked_otos text[] not null default '{}';
 
 -- Usage tracking table for daily limits
 create table if not exists public.usage_logs (
