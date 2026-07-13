@@ -27,20 +27,15 @@ export async function POST(req: NextRequest) {
 
     const input = keyword || niche || "general YouTube content";
 
-    // Credit check — skip for paid plans, skip gracefully if column not yet migrated
-    const { data: profile } = await supabase
-      .from("profiles")
-      .select("video_engine_credits, plan_type")
-      .eq("id", user.id)
-      .single();
-
-    const credits = profile?.video_engine_credits;
-    const planType = profile?.plan_type || "free";
-    const isUnlimitedPlan = ["pro", "elite", "creator_pro", "ultimate"].includes(planType);
-
-    // Only block if: NOT on unlimited plan AND credits column exists AND credits are 0
-    if (!isUnlimitedPlan && typeof credits === "number" && credits < 1) {
-      return NextResponse.json({ error: "Insufficient credits" }, { status: 402 });
+    const {
+      getVideoEngineCreditState,
+      creditGate,
+      decrementVideoEngineCredits,
+    } = await import("@/lib/videoEngineAccess");
+    const creditState = await getVideoEngineCreditState(user.id);
+    const gate = creditGate(creditState, 1);
+    if (!gate.ok) {
+      return NextResponse.json({ error: gate.error }, { status: gate.status });
     }
 
     // Cache check
@@ -92,18 +87,13 @@ export async function POST(req: NextRequest) {
     });
 
     await writeCache(cacheKey, "topics", parsed);
-    if (!isUnlimitedPlan && typeof credits === "number") {
-      await supabase
-        .from("profiles")
-        .update({ video_engine_credits: credits - 1 })
-        .eq("id", user.id);
-    }
+    await decrementVideoEngineCredits(user.id, 1, creditState);
 
     return NextResponse.json({
       ok: true,
       step: "topics",
       cache_hit: false,
-      credits_consumed: 1,
+      credits_consumed: creditState.unlimited ? 0 : 1,
       data: { topics },
     });
 

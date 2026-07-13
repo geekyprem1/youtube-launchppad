@@ -2,9 +2,16 @@ import { fetchPredictionData } from "./data";
 import { extractPredictionFeatures } from "./features";
 import { scorePrediction } from "./scoring";
 import { buildPredictionPromptV1 } from "./prompts/v1";
+import { buildABTestPromptV1 } from "./prompts/ab-v1";
 import { generateAIResponse } from "../../core/openrouter";
 import { validateAIResponse } from "../../core/validation";
-import { PredictionAnalysisSchema, PredictionRequest } from "./types";
+import {
+  PredictionAnalysisSchema,
+  PredictionRequest,
+  ABTestRequest,
+  ABTestAnalysisSchema,
+  type ABTestAnalysis,
+} from "./types";
 import { APIResponse } from "../../types/api";
 
 const FALLBACK_ANALYSIS = {
@@ -12,6 +19,28 @@ const FALLBACK_ANALYSIS = {
   strengths: ["Data available"],
   risks: ["Analysis unavailable"],
   improvements: []
+};
+
+const FALLBACK_AB: ABTestAnalysis = {
+  winner: "tie",
+  confidence: 40,
+  summary: "Unable to complete full A/B analysis. Try again with clearer titles.",
+  why_winner: ["Analysis incomplete"],
+  variant_a: {
+    label: "Option A",
+    score: 50,
+    estimated_ctr: "—",
+    strengths: [],
+    weaknesses: ["Analysis unavailable"],
+  },
+  variant_b: {
+    label: "Option B",
+    score: 50,
+    estimated_ctr: "—",
+    strengths: [],
+    weaknesses: ["Analysis unavailable"],
+  },
+  recommendation: "Re-run the simulator with two distinct options.",
 };
 
 export async function processPrediction(request: PredictionRequest): Promise<APIResponse> {
@@ -59,4 +88,51 @@ export async function processPrediction(request: PredictionRequest): Promise<API
     },
     analysis,
   } as any; 
+}
+
+/**
+ * A/B Test Simulator — compare title or thumbnail concept variants.
+ * Gated by `predictor` feature (ViralPredict OTO6).
+ */
+export async function processABTest(request: ABTestRequest): Promise<{
+  version: { prompt: string };
+  mode: "title" | "thumbnail";
+  analysis: ABTestAnalysis;
+}> {
+  const mode = request.mode || "title";
+  const prompt = buildABTestPromptV1({
+    mode,
+    topic: request.topic || undefined,
+    variantA: request.variant_a,
+    variantB: request.variant_b,
+  });
+
+  const aiRaw = await generateAIResponse(
+    [{ role: "user", content: prompt }],
+    { json: true, promptVersion: "prediction.ab.v1", temperature: 0.4, max_tokens: 1500 }
+  );
+
+  let analysis = validateAIResponse(aiRaw, ABTestAnalysisSchema, FALLBACK_AB);
+
+  // Soft consistency: if scores disagree with winner label, trust scores
+  const scoreA = analysis.variant_a.score;
+  const scoreB = analysis.variant_b.score;
+  if (Math.abs(scoreA - scoreB) >= 4) {
+    const byScore = scoreA > scoreB ? "A" : "B";
+    if (analysis.winner !== "tie" && analysis.winner !== byScore) {
+      analysis = { ...analysis, winner: byScore };
+    }
+  } else if (Math.abs(scoreA - scoreB) < 3 && analysis.winner !== "tie") {
+    // very close — allow model winner, but cap confidence
+    analysis = {
+      ...analysis,
+      confidence: Math.min(analysis.confidence, 62),
+    };
+  }
+
+  return {
+    version: { prompt: "ab.v1" },
+    mode,
+    analysis,
+  };
 }

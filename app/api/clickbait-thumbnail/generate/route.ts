@@ -16,14 +16,34 @@ export async function POST(req: Request) {
     if (denied) return denied;
 
     const body = await req.json();
-    const { videoType, topic } = body;
+    const { videoType, topic, templateId, stylePrompt, textStyle, colors } = body;
 
     if (!videoType || !topic?.trim()) {
       return NextResponse.json({ error: "Missing required fields" }, { status: 400 });
     }
 
+    // Optional template pack (ClickBoost)
+    let style = stylePrompt as string | undefined;
+    let text = textStyle as string | undefined;
+    let cols = colors as string | undefined;
+    if (templateId && typeof templateId === "string") {
+      const { getThumbTemplate } = await import("@/domains/clickbait-thumbnail/templates");
+      const t = getThumbTemplate(templateId);
+      if (t) {
+        style = t.style_prompt;
+        text = t.text_style;
+        cols = t.colors;
+      }
+    }
+
     // Step 1: Expand the topic into a maximum-CTR clickbait prompt
-    const { systemPrompt, userPromptText } = buildClickbaitPromptRequest({ videoType, topic });
+    const { systemPrompt, userPromptText } = buildClickbaitPromptRequest({
+      videoType,
+      topic,
+      stylePrompt: style,
+      textStyle: text,
+      colors: cols,
+    });
 
     const startTime = performance.now();
 

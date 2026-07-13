@@ -1,11 +1,12 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Sparkles, Youtube, Hash, ArrowRight, Zap } from "lucide-react";
+import { Sparkles, Youtube, Hash, ArrowRight, Zap, Package, Coins } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { useVideoEngineStore } from "@/lib/video-engine/state";
 import { WizardProgress } from "@/components/video-engine/WizardProgress";
+import { createClient } from "@/lib/supabase/client";
 import Link from "next/link";
 
 export default function VideoEnginePage() {
@@ -15,6 +16,35 @@ export default function VideoEnginePage() {
   const [activeTab, setActiveTab] = useState<"keyword" | "channel">("keyword");
   const [keyword, setKeyword] = useState("");
   const [channelUrl, setChannelUrl] = useState("");
+  const [credits, setCredits] = useState<number | null>(null);
+  const [unlimitedHint, setUnlimitedHint] = useState(false);
+
+  useEffect(() => {
+    const supabase = createClient();
+    supabase.auth.getUser().then(({ data: { user } }) => {
+      if (!user) return;
+      supabase
+        .from("profiles")
+        .select("video_engine_credits, plan_type, unlocked_otos")
+        .eq("id", user.id)
+        .single()
+        .then(({ data }) => {
+          if (typeof data?.video_engine_credits === "number") {
+            setCredits(data.video_engine_credits);
+          }
+          const otos = Array.isArray(data?.unlocked_otos)
+            ? (data.unlocked_otos as string[])
+            : [];
+          const plan = data?.plan_type || "free";
+          const unlim =
+            ["pro", "elite", "creator_pro", "ultimate"].includes(plan) ||
+            otos.some((o) =>
+              ["oto1", "oto9", "oto12"].includes(o.toLowerCase())
+            );
+          setUnlimitedHint(unlim);
+        });
+    });
+  }, []);
 
   const isValid = activeTab === "keyword"
     ? keyword.trim().length >= 3
@@ -48,15 +78,52 @@ export default function VideoEnginePage() {
             
             <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-blue-500/10 border border-blue-500/20 text-blue-300 text-sm font-medium mb-6 mt-4 sm:mt-0">
               <Sparkles className="w-4 h-4" />
-              AI Video Engine
+              VideoForge · AI Video Engine
             </div>
             <h1 className="text-4xl sm:text-5xl font-black text-white mb-4 leading-tight">
               From Idea to Full
               <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-cyan-400"> Video Kit</span>
             </h1>
             <p className="text-gray-400 text-lg">
-              Topic → Script → Thumbnail → Title → Description → Hashtags — all in one AI-powered flow.
+              Topic → Hooks → Script → then unlock Full Kit (titles, thumb brief, tags, hashtags) with VideoForge PRO.
             </p>
+
+            {/* Credits / unlimited messaging */}
+            <div className="mt-4 inline-flex items-center gap-2 px-3 py-1.5 rounded-lg bg-white/5 border border-white/10 text-xs text-gray-300">
+              <Coins className="w-3.5 h-3.5 text-amber-400" />
+              {unlimitedHint ? (
+                <span>Unlimited gens on your plan / VideoForge OTO</span>
+              ) : credits !== null ? (
+                <span>
+                  {credits} lifetime VE credits left · daily-style cap via credits
+                  (OTO1 removes burn)
+                </span>
+              ) : (
+                <span>Credits apply on free/FE · VideoForge (OTO1) = unlimited</span>
+              )}
+            </div>
+
+            <div className="mt-6 grid sm:grid-cols-2 gap-3 text-left">
+              <div className="p-4 rounded-xl bg-white/5 border border-white/10">
+                <p className="text-sm font-semibold text-white flex items-center gap-2">
+                  <Zap className="w-4 h-4 text-cyan-400" /> Core flow (FE)
+                </p>
+                <p className="text-xs text-gray-400 mt-1">
+                  Topics, hooks, script — start below.
+                </p>
+              </div>
+              <Link
+                href="/video-engine/kit"
+                className="p-4 rounded-xl bg-blue-500/10 border border-blue-400/20 hover:bg-blue-500/20 transition-colors"
+              >
+                <p className="text-sm font-semibold text-blue-200 flex items-center gap-2">
+                  <Package className="w-4 h-4" /> Full Video Kit
+                </p>
+                <p className="text-xs text-blue-200/70 mt-1">
+                  VideoForge PRO (OTO1) — 11-step publish package after script.
+                </p>
+              </Link>
+            </div>
           </div>
 
           {/* Card */}

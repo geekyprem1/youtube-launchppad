@@ -35,19 +35,15 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Hook is required for script generation" }, { status: 400 });
     }
 
-    // Credit check (2 credits for script) — skip for paid plans, skip gracefully if column not yet migrated
-    const { data: profile } = await supabase
-      .from("profiles")
-      .select("video_engine_credits, plan_type")
-      .eq("id", user.id)
-      .single();
-
-    const credits = profile?.video_engine_credits;
-    const planType = profile?.plan_type || "free";
-    const isUnlimitedPlan = ["pro", "elite", "creator_pro", "ultimate"].includes(planType);
-
-    if (!isUnlimitedPlan && typeof credits === "number" && credits < 2) {
-      return NextResponse.json({ error: "Insufficient credits" }, { status: 402 });
+    const {
+      getVideoEngineCreditState,
+      creditGate,
+      decrementVideoEngineCredits,
+    } = await import("@/lib/videoEngineAccess");
+    const creditState = await getVideoEngineCreditState(user.id);
+    const gate = creditGate(creditState, 2);
+    if (!gate.ok) {
+      return NextResponse.json({ error: gate.error }, { status: gate.status });
     }
 
     // Cache check
@@ -85,17 +81,14 @@ export async function POST(req: NextRequest) {
     const duration = getDurationLabel(script.word_count, ctx.video_type);
     const enrichedScript = { ...script, estimated_duration: duration };
 
-    // Cache + deduct 2 credits only if column exists
     await writeCache(cacheKey, "script", enrichedScript);
-    if (!isUnlimitedPlan && typeof credits === "number") {
-      await supabase
-        .from("profiles")
-        .update({ video_engine_credits: credits - 2 })
-        .eq("id", user.id);
-    }
+    await decrementVideoEngineCredits(user.id, 2, creditState);
 
     return NextResponse.json({
-      ok: true, step: "script", cache_hit: false, credits_consumed: 2,
+      ok: true,
+      step: "script",
+      cache_hit: false,
+      credits_consumed: creditState.unlimited ? 0 : 2,
       data: { script: enrichedScript },
     });
 

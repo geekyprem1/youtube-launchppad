@@ -39,6 +39,92 @@ const engagementColors: Record<string, "green" | "yellow" | "red"> = {
   low: "red",
 };
 
+/** Simple estimated retention polyline from hook + avg + risk markers */
+function RetentionCurve({
+  avgRetention,
+  riskPoints,
+  hookScore,
+}: {
+  avgRetention: number;
+  riskPoints: { timestamp: string; reason: string }[];
+  hookScore: number;
+}) {
+  // 0% → 100% of video length as 11 sample points
+  const start = Math.min(100, Math.max(70, hookScore + 5));
+  const mid = Math.min(start - 5, Math.max(25, avgRetention));
+  const end = Math.max(8, Math.round(mid * 0.45));
+  const points = [start, start - 4, start - 10, mid + 8, mid, mid - 5, mid - 12, end + 10, end + 4, end, Math.max(5, end - 3)];
+  const w = 400;
+  const h = 120;
+  const pad = 8;
+  const coords = points.map((p, i) => {
+    const x = pad + (i / (points.length - 1)) * (w - pad * 2);
+    const y = pad + (1 - p / 100) * (h - pad * 2);
+    return `${x},${y}`;
+  });
+  const area = `M${coords[0]} L${coords.join(" L")} L${w - pad},${h - pad} L${pad},${h - pad} Z`;
+
+  return (
+    <div className="space-y-3">
+      <svg viewBox={`0 0 ${w} ${h}`} className="w-full h-32">
+        <defs>
+          <linearGradient id="retFill" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stopColor="#22c55e" stopOpacity="0.35" />
+            <stop offset="100%" stopColor="#22c55e" stopOpacity="0.02" />
+          </linearGradient>
+        </defs>
+        {/* grid */}
+        {[25, 50, 75].map((g) => {
+          const y = pad + (1 - g / 100) * (h - pad * 2);
+          return (
+            <line
+              key={g}
+              x1={pad}
+              x2={w - pad}
+              y1={y}
+              y2={y}
+              stroke="#e5e7eb"
+              strokeDasharray="4 4"
+            />
+          );
+        })}
+        <path d={area} fill="url(#retFill)" />
+        <polyline
+          fill="none"
+          stroke="#16a34a"
+          strokeWidth="2.5"
+          points={coords.join(" ")}
+        />
+        {riskPoints.slice(0, 5).map((rp, i) => {
+          // map timestamp like "0:45" or "2:30" roughly along x
+          const parts = rp.timestamp.split(":").map(Number);
+          const secs =
+            parts.length === 2 ? parts[0] * 60 + parts[1] : parts[0] || 0;
+          const t = Math.min(0.95, secs / 600); // assume ~10 min scale
+          const x = pad + t * (w - pad * 2);
+          const yi = Math.min(points.length - 1, Math.floor(t * (points.length - 1)));
+          const y = pad + (1 - points[yi] / 100) * (h - pad * 2);
+          return (
+            <g key={i}>
+              <circle cx={x} cy={y} r="5" fill="#f97316" stroke="#fff" strokeWidth="1.5" />
+              <title>{`${rp.timestamp}: ${rp.reason}`}</title>
+            </g>
+          );
+        })}
+      </svg>
+      <div className="flex justify-between text-[10px] text-gray-400 px-1">
+        <span>Start (hook)</span>
+        <span>Mid</span>
+        <span>End</span>
+      </div>
+      <p className="text-xs text-gray-500">
+        Orange dots = predicted drop-off risks. Curve is estimated from public
+        metrics + AI (not official YouTube Analytics).
+      </p>
+    </div>
+  );
+}
+
 export default function RetentionPage() {
   const [videoUrl, setVideoUrl] = useState("");
   const [result, setResult] = useState<RetentionResult | null>(null);
@@ -81,7 +167,10 @@ export default function RetentionPage() {
 
   return (
     <>
-      <Header title="Retention Analyzer" subtitle="Find out why viewers drop off and how to fix it" />
+      <Header
+        title="WatchTime MAX"
+        subtitle="Retention curve · drop-off risks · AI tips to hold viewers longer"
+      />
       <div className="p-6 max-w-4xl mx-auto space-y-6">
 
         <Card>
@@ -186,6 +275,22 @@ export default function RetentionPage() {
             </Card>
 
             <div className="grid md:grid-cols-2 gap-4">
+              {/* Drop-off timeline viz */}
+              <Card className="md:col-span-2">
+                <CardHeader>
+                  <h3 className="font-semibold text-sm text-gray-900 flex items-center gap-2">
+                    <TrendingUp className="w-4 h-4 text-orange-500" /> Estimated retention curve
+                  </h3>
+                </CardHeader>
+                <CardBody>
+                  <RetentionCurve
+                    avgRetention={result.estimated_retention}
+                    riskPoints={result.risk_points || []}
+                    hookScore={result.hook_score}
+                  />
+                </CardBody>
+              </Card>
+
               {/* Risk Points */}
               <Card>
                 <CardHeader>

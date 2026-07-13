@@ -37,6 +37,18 @@ export default function VideoCreationProPage() {
   const [history, setHistory] = useState<HistoryItem[]>([]);
   const [historyLoading, setHistoryLoading] = useState(true);
 
+  useEffect(() => {
+    try {
+      const prefill = sessionStorage.getItem("faceless_video_prompt");
+      if (prefill) {
+        setPrompt(prefill);
+        sessionStorage.removeItem("faceless_video_prompt");
+      }
+    } catch {
+      // ignore
+    }
+  }, []);
+
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 

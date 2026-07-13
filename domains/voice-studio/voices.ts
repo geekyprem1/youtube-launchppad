@@ -31,6 +31,8 @@ const VOICE_IDS = [
   "zm_yunjian", "zm_yunxi", "zm_yunxia", "zm_yunyang",
 ];
 
+import { stylesForVoiceId, type VoiceStyleId } from "./styles";
+
 export interface VoiceOption {
   id: string;
   name: string;
@@ -38,6 +40,9 @@ export interface VoiceOption {
   language: string;
   gender: "Female" | "Male";
   label: string;
+  /** UI style tags (not separate TTS engines) */
+  styles: VoiceStyleId[];
+  premium?: boolean;
 }
 
 export const VOICES: VoiceOption[] = VOICE_IDS.map((id) => {
@@ -47,13 +52,17 @@ export const VOICES: VoiceOption[] = VOICE_IDS.map((id) => {
   const language = LANGUAGE_NAMES[languageCode] || languageCode;
   const gender = (GENDER_NAMES[genderCode] || genderCode) as "Female" | "Male";
   const displayName = name.charAt(0).toUpperCase() + name.slice(1);
+  const styles = stylesForVoiceId(id);
+  const premium = !languageCode.startsWith("a") && !languageCode.startsWith("b");
   return {
     id,
     name: displayName,
     languageCode,
     language,
     gender,
-    label: `${displayName} — ${gender}`,
+    label: `${displayName} — ${gender}${premium ? " · Multi-lang" : ""}`,
+    styles,
+    premium,
   };
 });
 

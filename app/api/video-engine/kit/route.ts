@@ -143,19 +143,15 @@ export async function POST(req: NextRequest) {
     const body = await req.json();
     const ctx = ContentContextSchema.parse(body);
 
-    // Credit check (3 credits for full kit) — skip for paid plans, skip gracefully if column not yet migrated
-    const { data: profile } = await supabase
-      .from("profiles")
-      .select("video_engine_credits, plan_type")
-      .eq("id", user.id)
-      .single();
-
-    const credits = profile?.video_engine_credits;
-    const planType = profile?.plan_type || "free";
-    const isUnlimitedPlan = ["pro", "elite", "creator_pro", "ultimate"].includes(planType);
-
-    if (!isUnlimitedPlan && typeof credits === "number" && credits < 3) {
-      return NextResponse.json({ error: "Insufficient credits" }, { status: 402 });
+    const {
+      getVideoEngineCreditState,
+      creditGate,
+      decrementVideoEngineCredits,
+    } = await import("@/lib/videoEngineAccess");
+    const creditState = await getVideoEngineCreditState(user.id);
+    const gate = creditGate(creditState, 3);
+    if (!gate.ok) {
+      return NextResponse.json({ error: gate.error }, { status: gate.status });
     }
 
     // Run all 11 kit modules in parallel
@@ -180,13 +176,7 @@ export async function POST(req: NextRequest) {
       }
     });
 
-    // Deduct 3 credits only if column exists and user is on free/starter plan
-    if (!isUnlimitedPlan && typeof credits === "number") {
-      await supabase
-        .from("profiles")
-        .update({ video_engine_credits: credits - 3 })
-        .eq("id", user.id);
-    }
+    await decrementVideoEngineCredits(user.id, 3, creditState);
 
     // Persist kit to session
     if (ctx.session_id) {

@@ -21,6 +21,11 @@ import {
   Film,
   Lock,
   Sparkles,
+  DollarSign,
+  Wallet,
+  Ghost,
+  Crown,
+  Radar,
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { useRouter } from "next/navigation";
@@ -29,9 +34,11 @@ import { cn } from "@/lib/utils";
 import { PLANS, type PlanType } from "@/lib/plans";
 import {
   canAccess,
+  ownsOto,
   type AccessFeatureKey,
 } from "@/lib/features";
 import { useMobileMenu } from "@/components/layout/MobileMenuProvider";
+import { CreditsBadge } from "@/components/layout/CreditsBadge";
 
 type NavItem = {
   href: string;
@@ -42,23 +49,28 @@ type NavItem = {
 };
 
 const nav: NavItem[] = [
+  { href: "/growth", icon: Radar, label: "GrowthRadar", highlight: true, featureKey: "channel_engine" },
   { href: "/dashboard", icon: Activity, label: "Channel Engine", featureKey: "channel_engine" },
   { href: "/dashboard/history", icon: Clock, label: "Channel Audits History", featureKey: "channel_engine" },
-  { href: "/video-engine", icon: Clapperboard, label: "Video Engine", highlight: true, featureKey: "video_engine" },
+  { href: "/video-engine", icon: Clapperboard, label: "VideoForge", highlight: true, featureKey: "video_engine" },
   { href: "/video-engine/history", icon: Clock, label: "Generation History", featureKey: "video_engine_history" },
   { href: "/voice-studio", icon: Mic, label: "Voice Studio", highlight: true, featureKey: "voice_studio" },
   { href: "/ideas", icon: Lightbulb, label: "Recommendation Engine", highlight: true, featureKey: "ideas" },
-  { href: "/toolkit", icon: Activity, label: "Toolkit Engine", highlight: true, featureKey: "toolkit" },
+  { href: "/toolkit", icon: Activity, label: "Creator Toolkit X", highlight: true, featureKey: "toolkit" },
   { href: "/toolkit/history", icon: Clock, label: "Toolkit History", featureKey: "toolkit" },
   { href: "/thumbnail-engine", icon: ImageIcon, label: "Thumbnail Pro Engine", highlight: true, featureKey: "thumbnail_basic" },
   { href: "/thumbnail-engine/history", icon: Clock, label: "Thumbnail History", featureKey: "thumbnail_history" },
-  { href: "/clickbait-thumbnail", icon: Flame, label: "Clickbait Thumbnail Maker", highlight: true, featureKey: "clickbait" },
+  { href: "/clickbait-thumbnail", icon: Flame, label: "ClickBoost", highlight: true, featureKey: "clickbait" },
   { href: "/video-creation-pro", icon: Film, label: "Video Creation Engine Pro", highlight: true, featureKey: "video_creation_pro" },
   { href: "/predictor", icon: CheckCircle, label: "Success Predictor", highlight: true, featureKey: "predictor" },
-  { href: "/optimize", icon: Sliders, label: "Title & Thumbnail", featureKey: "optimize" },
-  { href: "/retention", icon: TrendingUp, label: "Retention Analyzer", featureKey: "retention" },
+  { href: "/optimize", icon: Sliders, label: "RankPilot", featureKey: "optimize" },
+  { href: "/retention", icon: TrendingUp, label: "WatchTime MAX", featureKey: "retention" },
   { href: "/competitors", icon: Users, label: "Competitor Intel", featureKey: "competitors" },
   { href: "/keywords", icon: Search, label: "Keyword Research", featureKey: "keywords" },
+  { href: "/moneyflow", icon: DollarSign, label: "MoneyFlow", highlight: true, featureKey: "moneyflow" },
+  { href: "/profit", icon: Wallet, label: "Profit Accelerator", highlight: true, featureKey: "profit" },
+  { href: "/faceless", icon: Ghost, label: "Faceless Empire", highlight: true, featureKey: "faceless_empire" },
+  { href: "/vip", icon: Crown, label: "Infinity VIP", highlight: true, featureKey: "vip" },
 ];
 
 export function Sidebar() {
@@ -116,6 +128,10 @@ export function Sidebar() {
 
   const isAdmin = role === "admin";
   const planConfig = PLANS[plan] ?? PLANS.free;
+  const isVip =
+    isAdmin ||
+    ownsOto(unlockedOtos, "oto12") ||
+    canAccess(plan, unlockedOtos, "vip", { isAdmin });
 
   const hasAllAccess =
     isAdmin ||
@@ -162,6 +178,12 @@ export function Sidebar() {
             >
               {planConfig.name}
             </span>
+            {isVip && (
+              <span className="ml-1 inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded text-[10px] font-bold bg-amber-100 text-amber-800 border border-amber-200">
+                <Crown className="w-3 h-3" />
+                VIP
+              </span>
+            )}
           </div>
         </div>
 
@@ -258,6 +280,12 @@ export function Sidebar() {
           {userEmail && (
             <p className="px-3 text-xs text-gray-500 truncate mb-2">{userEmail}</p>
           )}
+          <div className="px-2 mb-2">
+            <CreditsBadge className="w-full justify-center" />
+            <p className="text-[10px] text-gray-400 text-center mt-1">
+              Video Engine credits
+            </p>
+          </div>
           {showUpgradeCta && (
             <Link
               href="/upgrade"

@@ -5,8 +5,17 @@ import { Header } from "@/components/layout/Header";
 import { Button } from "@/components/ui/Button";
 import { Card, CardBody } from "@/components/ui/Card";
 import { Mic, Loader2, Download, RefreshCw, Volume2, Clock } from "lucide-react";
-import { groupVoicesByLanguage, DEFAULT_VOICE } from "@/domains/voice-studio/voices";
+import {
+  groupVoicesByLanguage,
+  DEFAULT_VOICE,
+  VOICES,
+} from "@/domains/voice-studio/voices";
+import {
+  VOICE_STYLES,
+  type VoiceStyleId,
+} from "@/domains/voice-studio/styles";
 import { MAX_SCRIPT_CHARS, estimateDurationSeconds } from "@/domains/voice-studio/chunk";
+import { cn } from "@/lib/utils";
 
 interface GenerationResult {
   id?: string;
@@ -28,6 +37,8 @@ function formatDuration(seconds: number): string {
 export default function VoiceStudioPage() {
   const [script, setScript] = useState("");
   const [voice, setVoice] = useState(DEFAULT_VOICE);
+  const [langFilter, setLangFilter] = useState<string>("all");
+  const [styleFilter, setStyleFilter] = useState<VoiceStyleId | "all">("all");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [result, setResult] = useState<GenerationResult | null>(null);
@@ -59,6 +70,15 @@ export default function VoiceStudioPage() {
 
   useEffect(() => {
     loadHistory();
+    try {
+      const prefill = sessionStorage.getItem("faceless_voice_script");
+      if (prefill) {
+        setScript(prefill);
+        sessionStorage.removeItem("faceless_voice_script");
+      }
+    } catch {
+      // ignore
+    }
   }, []);
 
   const handleGenerate = async () => {
@@ -93,8 +113,8 @@ export default function VoiceStudioPage() {
   return (
     <>
       <Header
-        title="Voice Studio"
-        subtitle="Turn any script into a natural AI voiceover using Kokoro TTS."
+        title="VoiceStudio AI"
+        subtitle="Multi-language voices · style filters · studio TTS (Kokoro)"
       />
 
       <div className="p-4 md:p-8 max-w-6xl mx-auto grid grid-cols-1 lg:grid-cols-12 gap-6 md:gap-8">
@@ -127,23 +147,90 @@ export default function VoiceStudioPage() {
               )}
             </div>
 
-            <div>
-              <label className="block text-sm font-semibold text-gray-900 mb-3">Voice</label>
+            <div className="space-y-3">
+              <label className="block text-sm font-semibold text-gray-900">
+                Voice library
+              </label>
+              <div>
+                <p className="text-xs text-gray-500 mb-1.5">Language</p>
+                <select
+                  value={langFilter}
+                  onChange={(e) => setLangFilter(e.target.value)}
+                  className="w-full bg-gray-50 border border-gray-200 rounded-lg px-3 py-2 text-sm outline-none focus:ring-1 focus:ring-blue-500"
+                >
+                  <option value="all">All languages</option>
+                  {VOICE_GROUPS.map((g) => (
+                    <option key={g.language} value={g.language}>
+                      {g.language} ({g.voices.length})
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <p className="text-xs text-gray-500 mb-1.5">Style</p>
+                <div className="flex flex-wrap gap-1.5">
+                  <button
+                    type="button"
+                    onClick={() => setStyleFilter("all")}
+                    className={cn(
+                      "px-2 py-1 rounded-lg text-[11px] font-medium border",
+                      styleFilter === "all"
+                        ? "bg-blue-600 text-white border-blue-600"
+                        : "bg-white text-gray-600 border-gray-200"
+                    )}
+                  >
+                    All
+                  </button>
+                  {VOICE_STYLES.map((s) => (
+                    <button
+                      key={s.id}
+                      type="button"
+                      title={s.description}
+                      onClick={() => setStyleFilter(s.id)}
+                      className={cn(
+                        "px-2 py-1 rounded-lg text-[11px] font-medium border",
+                        styleFilter === s.id
+                          ? "bg-blue-600 text-white border-blue-600"
+                          : "bg-white text-gray-600 border-gray-200"
+                      )}
+                    >
+                      {s.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
               <select
                 value={voice}
                 onChange={(e) => setVoice(e.target.value)}
                 className="w-full bg-gray-50 border border-gray-200 rounded-lg px-3 py-2.5 text-sm outline-none focus:ring-1 focus:ring-blue-500"
               >
-                {VOICE_GROUPS.map((group) => (
-                  <optgroup key={group.language} label={group.language}>
-                    {group.voices.map((v) => (
-                      <option key={v.id} value={v.id}>
-                        {v.label}
-                      </option>
-                    ))}
-                  </optgroup>
-                ))}
+                {VOICE_GROUPS.filter(
+                  (g) => langFilter === "all" || g.language === langFilter
+                ).map((group) => {
+                  const voices = group.voices.filter(
+                    (v) =>
+                      styleFilter === "all" ||
+                      v.styles?.includes(styleFilter as VoiceStyleId)
+                  );
+                  if (!voices.length) return null;
+                  return (
+                    <optgroup key={group.language} label={group.language}>
+                      {voices.map((v) => (
+                        <option key={v.id} value={v.id}>
+                          {v.label}
+                          {v.styles?.length
+                            ? ` · ${v.styles.slice(0, 2).join(", ")}`
+                            : ""}
+                        </option>
+                      ))}
+                    </optgroup>
+                  );
+                })}
               </select>
+              <p className="text-[11px] text-gray-400">
+                {VOICES.length} voices · filter by language + style. Multi-lang
+                voices marked in the list.
+              </p>
             </div>
 
             <Button

@@ -29,6 +29,8 @@ export const FEATURE_KEYS = [
   "retention",
   "moneyflow",
   "profit",
+  "faceless_empire",
+  "vip",
 ] as const;
 
 export type AccessFeatureKey = (typeof FEATURE_KEYS)[number];
@@ -58,7 +60,7 @@ export const FEATURE_ROUTES: Record<AccessFeatureKey, string[]> = {
   thumbnail_basic: ["/thumbnail-engine"],
   thumbnail_history: ["/thumbnail-engine/history"],
   video_kit: ["/video-engine/kit"],
-  channel_engine: ["/dashboard"],
+  channel_engine: ["/dashboard", "/growth"],
   ideas: ["/ideas"],
   competitors: ["/competitors"],
   keywords: ["/keywords"],
@@ -69,8 +71,10 @@ export const FEATURE_ROUTES: Record<AccessFeatureKey, string[]> = {
   predictor: ["/predictor"],
   optimize: ["/optimize"],
   retention: ["/retention"],
-  moneyflow: [], // future
-  profit: [], // future
+  moneyflow: ["/moneyflow"],
+  profit: ["/profit"],
+  faceless_empire: ["/faceless"],
+  vip: ["/vip"],
 };
 
 // ── OTO catalog ──────────────────────────────────────────────────────
@@ -169,8 +173,14 @@ export const OTO_CATALOG: readonly OtoProduct[] = [
     id: "oto9",
     name: "Faceless Empire",
     price: 79,
-    description: "Video Creation Pro + faceless production bundle",
-    unlocks: ["video_creation_pro", "voice_studio", "clickbait", "video_kit"],
+    description: "Faceless guided pipeline + VCP, voice, thumb, kit bundle",
+    unlocks: [
+      "faceless_empire",
+      "video_creation_pro",
+      "voice_studio",
+      "clickbait",
+      "video_kit",
+    ],
     envKey: "NEXT_PUBLIC_OTO9_URL",
   },
   {
@@ -210,7 +220,7 @@ export const OTO_BY_ID: Record<OtoId, OtoProduct> = OTO_CATALOG.reduce(
 // ── Feature metadata (labels for UI) ─────────────────────────────────
 
 export const FEATURE_LABELS: Record<AccessFeatureKey, string> = {
-  video_engine: "Video Engine",
+  video_engine: "VideoForge",
   video_engine_history: "Video Engine History",
   thumbnail_basic: "Basic Thumbnail Engine",
   thumbnail_history: "Thumbnail History",
@@ -221,13 +231,15 @@ export const FEATURE_LABELS: Record<AccessFeatureKey, string> = {
   keywords: "Keyword Research",
   voice_studio: "Voice Studio",
   toolkit: "Toolkit Engine",
-  clickbait: "Clickbait Thumbnail",
+  clickbait: "ClickBoost",
   video_creation_pro: "Video Creation Pro",
   predictor: "Success Predictor",
   optimize: "Title & Thumbnail Optimize",
   retention: "Retention Analyzer",
   moneyflow: "MoneyFlow",
   profit: "Profit Accelerator",
+  faceless_empire: "Faceless Empire",
+  vip: "Infinity VIP",
 };
 
 // ── Helpers ──────────────────────────────────────────────────────────
@@ -373,6 +385,10 @@ export function featureKeyFromPath(pathname: string): AccessFeatureKey | null {
     "predictor",
     "optimize",
     "retention",
+    "moneyflow",
+    "profit",
+    "faceless_empire",
+    "vip",
   ];
 
   for (const key of ordered) {

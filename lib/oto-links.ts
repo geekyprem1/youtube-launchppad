@@ -1,6 +1,10 @@
 /**
  * LaunchPadJV / external payment URL helpers.
  * No in-app checkout — links open in a new tab.
+ *
+ * IMPORTANT: Client components import this file. Next.js only inlines
+ * `process.env.NEXT_PUBLIC_*` when accessed with a **static** property name.
+ * Dynamic `process.env[key]` breaks in the browser (ReferenceError: process is not defined).
  */
 
 import {
@@ -10,10 +14,25 @@ import {
   type OtoProduct,
 } from "@/lib/features";
 
+/** Static map so webpack/Next can inline each NEXT_PUBLIC_* value at build time */
+const PUBLIC_ENV: Record<string, string | undefined> = {
+  NEXT_PUBLIC_FE_URL: process.env.NEXT_PUBLIC_FE_URL,
+  NEXT_PUBLIC_OTO1_URL: process.env.NEXT_PUBLIC_OTO1_URL,
+  NEXT_PUBLIC_OTO2_URL: process.env.NEXT_PUBLIC_OTO2_URL,
+  NEXT_PUBLIC_OTO3_URL: process.env.NEXT_PUBLIC_OTO3_URL,
+  NEXT_PUBLIC_OTO4_URL: process.env.NEXT_PUBLIC_OTO4_URL,
+  NEXT_PUBLIC_OTO5_URL: process.env.NEXT_PUBLIC_OTO5_URL,
+  NEXT_PUBLIC_OTO6_URL: process.env.NEXT_PUBLIC_OTO6_URL,
+  NEXT_PUBLIC_OTO7_URL: process.env.NEXT_PUBLIC_OTO7_URL,
+  NEXT_PUBLIC_OTO8_URL: process.env.NEXT_PUBLIC_OTO8_URL,
+  NEXT_PUBLIC_OTO9_URL: process.env.NEXT_PUBLIC_OTO9_URL,
+  NEXT_PUBLIC_OTO10_URL: process.env.NEXT_PUBLIC_OTO10_URL,
+  NEXT_PUBLIC_OTO11_URL: process.env.NEXT_PUBLIC_OTO11_URL,
+  NEXT_PUBLIC_OTO12_URL: process.env.NEXT_PUBLIC_OTO12_URL,
+};
+
 function readPublicEnv(key: string): string | undefined {
-  // Next.js inlines NEXT_PUBLIC_* at build time
-  const env = process.env as Record<string, string | undefined>;
-  const value = env[key]?.trim();
+  const value = PUBLIC_ENV[key]?.trim();
   return value || undefined;
 }
 
