@@ -2,6 +2,9 @@ import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { callAI } from "@/lib/openrouter";
 import { buildThumbnailPromptRequest } from "@/domains/thumbnail-engine/prompt";
+import { persistRemoteImageSafe } from "@/lib/persistRemoteImage";
+
+export const maxDuration = 60;
 
 export async function POST(req: Request) {
   try {
@@ -65,15 +68,28 @@ export async function POST(req: Request) {
       throw new Error(siliconFlowData.error?.message || "Failed to generate image");
     }
 
-    const imageUrl = siliconFlowData.images?.[0]?.url;
+    const tempImageUrl = siliconFlowData.images?.[0]?.url;
     const seed = siliconFlowData.images?.[0]?.seed?.toString() || "N/A";
 
-    if (!imageUrl) throw new Error("No image URL returned from SiliconFlow");
+    if (!tempImageUrl) throw new Error("No image URL returned from SiliconFlow");
+
+    // Step 3: Re-host on Supabase (SiliconFlow URLs expire)
+    const { url: imageUrl, persisted } = await persistRemoteImageSafe(
+      supabase,
+      user.id,
+      tempImageUrl,
+      "thumbnail-engine"
+    );
+    if (!persisted) {
+      console.warn(
+        "[ThumbnailEngine] Image not persisted — run supabase/thumbnail_storage_schema.sql"
+      );
+    }
 
     const endTime = performance.now();
     const generationTime = parseFloat(((endTime - startTime) / 1000).toFixed(2));
 
-    // Step 3: Save history
+    // Step 4: Save history
     const { data: savedData, error: dbError } = await supabase
       .from("thumbnail_engine_history")
       .insert({
@@ -104,7 +120,8 @@ export async function POST(req: Request) {
       imageSize,
       seed,
       generationTime,
-      historyId: savedData?.id
+      historyId: savedData?.id,
+      imagePersisted: persisted,
     });
 
   } catch (error: any) {

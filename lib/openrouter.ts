@@ -57,8 +57,11 @@ export async function callVisionAI(
   prompt: string,
   imageUrl: string
 ): Promise<string> {
+  // gemini-2.0-flash-exp:free was retired on OpenRouter (404 "No endpoints found")
   const visionModel =
-    process.env.OPENROUTER_VISION_MODEL || "google/gemini-2.0-flash-exp:free";
+    process.env.OPENROUTER_VISION_MODEL ||
+    process.env.OPENROUTER_DEFAULT_MODEL ||
+    "google/gemini-2.5-flash";
 
   return callAI(
     [
@@ -70,6 +73,6 @@ export async function callVisionAI(
         ],
       },
     ],
-    { model: visionModel, json: true }
+    { model: visionModel, json: true, temperature: 0.3, max_tokens: 1200 }
   );
 }

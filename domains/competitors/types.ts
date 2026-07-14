@@ -1,7 +1,8 @@
 import { z } from "zod";
 
 export const CompetitorRequestSchema = z.object({
-  channelUrl: z.string().url("Must be a valid YouTube URL"),
+  // Accept full URLs, @handles, or channel IDs — normalized server-side
+  channelUrl: z.string().min(2, "Channel URL or @handle is required"),
 });
 
 export type CompetitorRequest = z.infer<typeof CompetitorRequestSchema>;

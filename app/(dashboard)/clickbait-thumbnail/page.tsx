@@ -61,6 +61,7 @@ export default function ClickbaitThumbnailPage() {
 
   const [history, setHistory] = useState<HistoryItem[]>([]);
   const [historyLoading, setHistoryLoading] = useState(true);
+  const [brokenHistoryIds, setBrokenHistoryIds] = useState<Record<string, true>>({});
 
   // Analyze
   const [analyzeDesc, setAnalyzeDesc] = useState("");
@@ -582,26 +583,65 @@ export default function ClickbaitThumbnailPage() {
                   <p className="text-sm text-gray-400">None yet.</p>
                 ) : (
                   <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
-                    {history.map((item) => (
-                      <div
-                        key={item.id}
-                        className="group relative rounded-lg overflow-hidden border aspect-video bg-gray-100"
-                      >
-                        <img
-                          src={item.imageUrl}
-                          alt={item.topic}
-                          className="w-full h-full object-cover"
-                        />
-                        <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 flex items-center justify-center">
-                          <button
-                            onClick={() => handleDownload(item.imageUrl)}
-                            className="p-2 bg-white/90 rounded-full"
-                          >
-                            <Download className="w-4 h-4" />
-                          </button>
-                        </div>
-                      </div>
-                    ))}
+                    {history.map((item) => {
+                      const broken = !!brokenHistoryIds[item.id];
+                      return (
+                        <button
+                          key={item.id}
+                          type="button"
+                          title={item.topic}
+                          onClick={() => {
+                            if (broken) return;
+                            setResult({
+                              imageUrl: item.imageUrl,
+                              clickbaitPrompt: item.clickbaitPrompt,
+                              generationTime: 0,
+                            });
+                            if (item.videoType) setVideoType(item.videoType);
+                            setTopic(item.topic);
+                          }}
+                          className="group relative rounded-lg overflow-hidden border aspect-video bg-gray-100 text-left w-full"
+                        >
+                          {broken ? (
+                            <div className="absolute inset-0 flex flex-col items-center justify-center p-2 text-center">
+                              <span className="text-[10px] text-gray-500 line-clamp-3">
+                                {item.topic}
+                              </span>
+                              <span className="text-[9px] text-red-400 mt-1">
+                                Image expired
+                              </span>
+                            </div>
+                          ) : (
+                            // eslint-disable-next-line @next/next/no-img-element
+                            <img
+                              src={item.imageUrl}
+                              alt={item.topic}
+                              className="w-full h-full object-cover"
+                              onError={() =>
+                                setBrokenHistoryIds((prev) => ({
+                                  ...prev,
+                                  [item.id]: true,
+                                }))
+                              }
+                            />
+                          )}
+                          {!broken && (
+                            <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 flex items-center justify-center gap-2">
+                              <span
+                                role="button"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleDownload(item.imageUrl);
+                                }}
+                                className="p-2 bg-white/90 rounded-full cursor-pointer"
+                              >
+                                <Download className="w-4 h-4" />
+                              </span>
+                            </div>
+                          )}
+                        </button>
+                      );
+                    })}
                   </div>
                 )}
               </div>

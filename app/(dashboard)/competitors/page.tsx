@@ -4,50 +4,79 @@ import { useState } from "react";
 import { Header } from "@/components/layout/Header";
 import { Card, CardBody } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
-import { 
-  Users, TrendingUp, Target, Search, AlertTriangle, PlayCircle, Eye, Clock, PenTool, Zap
+import {
+  Users,
+  TrendingUp,
+  Target,
+  Search,
+  AlertTriangle,
+  PlayCircle,
+  Eye,
+  Zap,
+  PenTool,
 } from "lucide-react";
 
 export default function CompetitorsPage() {
   const [channelUrl, setChannelUrl] = useState("");
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const [result, setResult] = useState<any>(null);
 
   async function analyze() {
     if (!channelUrl.trim()) return;
     setLoading(true);
     setResult(null);
-    
+    setError(null);
+
     try {
       const res = await fetch("/api/competitors", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ channelUrl }),
+        body: JSON.stringify({ channelUrl: channelUrl.trim() }),
       });
       const data = await res.json();
-      
+
+      if (!res.ok) {
+        setError(data.error || "Failed to analyze competitor");
+        return;
+      }
+
       if (data.metrics) {
         setResult({
           channel_name: data.metrics.channel_name,
+          subscriber_count: data.metrics.subscriber_count,
           threat_level: data.metrics.threat_level,
           threat_reason: data.analysis?.threat_reason,
           recent_viral: data.metrics.recent_viral,
-          opportunity_gaps: data.analysis?.opportunity_gaps || []
+          opportunity_gaps: data.analysis?.opportunity_gaps || [],
         });
+      } else {
+        setError("Unexpected response from server");
       }
     } catch (err) {
       console.error(err);
+      setError("Network error — please try again");
     } finally {
       setLoading(false);
     }
   }
 
+  const threatBadgeClass = (level: string) => {
+    const l = (level || "").toLowerCase();
+    if (l === "critical") return "bg-red-100 text-red-800";
+    if (l === "high") return "bg-orange-100 text-orange-800";
+    if (l === "medium") return "bg-yellow-100 text-yellow-800";
+    return "bg-green-100 text-green-800";
+  };
+
   return (
     <>
-      <Header title="Competitor Intel" subtitle="Discover what your competitors are NOT doing and steal their audience." />
-      
+      <Header
+        title="Competitor Intel"
+        subtitle="Discover what your competitors are NOT doing and steal their audience."
+      />
+
       <div className="p-4 md:p-8 max-w-6xl mx-auto space-y-8">
-        
         {/* Quick Analyze */}
         <div className="max-w-2xl mx-auto">
           <div className="flex gap-2">
@@ -58,25 +87,36 @@ export default function CompetitorsPage() {
                 value={channelUrl}
                 onChange={(e) => setChannelUrl(e.target.value)}
                 onKeyDown={(e) => e.key === "Enter" && analyze()}
-                placeholder="Paste competitor's YouTube channel URL..."
+                placeholder="Paste competitor URL or @handle (e.g. youtube.com/@mkbhd)"
                 className="w-full pl-9 pr-4 py-3 bg-white border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 shadow-sm"
               />
             </div>
-            <Button onClick={analyze} disabled={!channelUrl.trim()} loading={loading} className="px-6 rounded-xl bg-blue-600 hover:bg-blue-700">
+            <Button
+              onClick={analyze}
+              disabled={!channelUrl.trim()}
+              loading={loading}
+              className="px-6 rounded-xl bg-blue-600 hover:bg-blue-700"
+            >
               <Target className="w-4 h-4 mr-2" /> Find Gaps
             </Button>
           </div>
+          {error && (
+            <p className="mt-3 text-sm text-red-600 bg-red-50 border border-red-100 rounded-lg px-3 py-2">
+              {error}
+            </p>
+          )}
         </div>
 
         {/* Premium Empty State */}
-        {!loading && !result && (
+        {!loading && !result && !error && (
           <div className="text-center py-24 bg-white rounded-2xl border border-gray-100 shadow-sm">
             <div className="w-16 h-16 bg-purple-50 rounded-2xl flex items-center justify-center mx-auto mb-5">
               <Users className="w-8 h-8 text-purple-600" />
             </div>
             <h3 className="text-xl font-bold text-gray-900 mb-2">Find Your Opportunity Gap</h3>
             <p className="text-gray-500 text-sm max-w-md mx-auto mb-6">
-              CreatorOS AI analyzes your competitors to find the videos they are NOT making, the keywords they ignored, and the audiences they missed.
+              CreatorOS AI pulls live YouTube data on your competitor, scores the threat, and finds
+              videos they are NOT making — keywords they ignored and audiences they missed.
             </p>
           </div>
         )}
@@ -85,20 +125,30 @@ export default function CompetitorsPage() {
           <div className="space-y-6">
             <div className="h-32 bg-white rounded-xl border border-gray-100 animate-pulse" />
             <div className="h-64 bg-white rounded-xl border border-gray-100 animate-pulse" />
+            <p className="text-center text-sm text-gray-500">
+              Fetching live channel data from YouTube…
+            </p>
           </div>
         )}
 
         {/* Results */}
         {!loading && result && (
           <div className="space-y-8">
-            
             {/* Threat Level */}
             <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 bg-white p-6 rounded-xl border border-gray-200 shadow-sm">
               <div>
-                <div className="flex items-center gap-3 mb-1">
+                <div className="flex flex-wrap items-center gap-3 mb-1">
                   <h2 className="text-xl font-bold text-gray-900">{result.channel_name}</h2>
-                  <span className="bg-orange-100 text-orange-800 text-xs font-bold px-2.5 py-1 rounded-md uppercase tracking-wider flex items-center gap-1">
-                    <AlertTriangle className="w-3.5 h-3.5" /> Threat Level: {result.threat_level}
+                  {result.subscriber_count && (
+                    <span className="text-xs font-medium text-gray-500 bg-gray-50 border border-gray-100 px-2 py-1 rounded-md">
+                      {result.subscriber_count} subscribers
+                    </span>
+                  )}
+                  <span
+                    className={`${threatBadgeClass(result.threat_level)} text-xs font-bold px-2.5 py-1 rounded-md uppercase tracking-wider flex items-center gap-1`}
+                  >
+                    <AlertTriangle className="w-3.5 h-3.5" /> Threat Level:{" "}
+                    {result.threat_level}
                   </span>
                 </div>
                 <p className="text-sm text-gray-600 mt-1">{result.threat_reason}</p>
@@ -106,27 +156,48 @@ export default function CompetitorsPage() {
             </div>
 
             <div className="grid md:grid-cols-12 gap-8">
-              
-              {/* Left: Recent Viral & Missing */}
+              {/* Left: Recent Viral */}
               <div className="md:col-span-4 space-y-6">
                 <Card className="border-gray-200 shadow-sm">
                   <CardBody className="p-5">
                     <h3 className="text-sm font-bold text-gray-900 mb-4 flex items-center gap-2">
                       <TrendingUp className="w-4 h-4 text-purple-600" /> Latest Viral Video
                     </h3>
-                    <div className="aspect-video bg-gray-100 rounded-lg mb-4 flex items-center justify-center">
-                      <PlayCircle className="w-8 h-8 text-gray-300" />
+                    <div className="aspect-video bg-gray-100 rounded-lg mb-4 flex items-center justify-center overflow-hidden relative">
+                      {result.recent_viral?.thumbnail_url ? (
+                        // eslint-disable-next-line @next/next/no-img-element
+                        <img
+                          src={result.recent_viral.thumbnail_url}
+                          alt={result.recent_viral.title}
+                          className="w-full h-full object-cover"
+                        />
+                      ) : (
+                        <PlayCircle className="w-8 h-8 text-gray-300" />
+                      )}
                     </div>
-                    <p className="font-semibold text-gray-900 text-sm leading-snug mb-3">"{result.recent_viral.title}"</p>
-                    
+                    <p className="font-semibold text-gray-900 text-sm leading-snug mb-1">
+                      &ldquo;{result.recent_viral.title}&rdquo;
+                    </p>
+                    {result.recent_viral?.upload_time && (
+                      <p className="text-xs text-gray-400 mb-3">
+                        {result.recent_viral.upload_time}
+                      </p>
+                    )}
+
                     <div className="grid grid-cols-2 gap-2 text-xs">
                       <div className="bg-gray-50 p-2 rounded border border-gray-100">
                         <span className="text-gray-500 block mb-0.5">Estimated Views</span>
-                        <span className="font-bold text-gray-900 flex items-center gap-1"><Eye className="w-3 h-3 text-blue-500" /> {result.recent_viral.views}</span>
+                        <span className="font-bold text-gray-900 flex items-center gap-1">
+                          <Eye className="w-3 h-3 text-blue-500" />{" "}
+                          {result.recent_viral.views}
+                        </span>
                       </div>
                       <div className="bg-gray-50 p-2 rounded border border-gray-100">
                         <span className="text-gray-500 block mb-0.5">Estimated CTR</span>
-                        <span className="font-bold text-gray-900 flex items-center gap-1"><Target className="w-3 h-3 text-green-500" /> {result.recent_viral.ctr}</span>
+                        <span className="font-bold text-gray-900 flex items-center gap-1">
+                          <Target className="w-3 h-3 text-green-500" />{" "}
+                          {result.recent_viral.ctr}
+                        </span>
                       </div>
                     </div>
                   </CardBody>
@@ -138,9 +209,12 @@ export default function CompetitorsPage() {
                 <h3 className="text-lg font-bold text-gray-900 mb-2 flex items-center gap-2">
                   <Target className="w-5 h-5 text-green-600" /> Discovered Opportunity Gaps
                 </h3>
-                
+
                 {result.opportunity_gaps.map((gap: any, i: number) => (
-                  <Card key={i} className="border-gray-200 shadow-sm hover:border-green-200 transition-colors">
+                  <Card
+                    key={i}
+                    className="border-gray-200 shadow-sm hover:border-green-200 transition-colors"
+                  >
                     <CardBody className="p-5">
                       <div className="flex flex-col md:flex-row gap-6">
                         <div className="flex-1">
@@ -148,7 +222,7 @@ export default function CompetitorsPage() {
                             {gap.gap_type}
                           </span>
                           <p className="text-sm text-gray-600 mb-3">{gap.description}</p>
-                          
+
                           <div className="bg-green-50/50 border border-green-100 rounded-lg p-3">
                             <p className="text-xs font-semibold text-green-900 flex items-center gap-1 mb-1">
                               <Zap className="w-3.5 h-3.5" /> AI Recommended Action
@@ -156,9 +230,12 @@ export default function CompetitorsPage() {
                             <p className="text-sm font-medium text-green-800">{gap.action}</p>
                           </div>
                         </div>
-                        
+
                         <div className="md:w-40 shrink-0 flex flex-col justify-end">
-                          <Button size="sm" className="w-full bg-blue-600 hover:bg-blue-700 text-white border-none shadow-sm">
+                          <Button
+                            size="sm"
+                            className="w-full bg-blue-600 hover:bg-blue-700 text-white border-none shadow-sm"
+                          >
                             <PenTool className="w-3.5 h-3.5 mr-2" /> Execute
                           </Button>
                         </div>
@@ -167,7 +244,6 @@ export default function CompetitorsPage() {
                   </Card>
                 ))}
               </div>
-
             </div>
           </div>
         )}

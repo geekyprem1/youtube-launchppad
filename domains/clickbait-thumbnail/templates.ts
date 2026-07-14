@@ -1,5 +1,6 @@
 /**
  * ClickBoost thumbnail style templates (static pack).
+ * Total: 18 distinct style packs for generation steering.
  */
 
 export type ThumbTemplate = {
@@ -111,6 +112,126 @@ export const CLICKBOOST_TEMPLATES: ThumbTemplate[] = [
     colors: "Warm skin tones + bold accent",
     best_for: "Reactions, opinions, drama",
     sample_topics: ["I can't believe this worked", "They lied about this"],
+  },
+  {
+    id: "vs-battle",
+    name: "VS Battle",
+    category: "Viral",
+    description: "Two rivals face off with a bold center VS.",
+    style_prompt:
+      "Versus battle thumbnail: two subjects on opposite sides, giant VS in the center, sparks or clash effects, high energy rivalry composition",
+    text_style: "A vs B or left/right labels",
+    colors: "Red vs blue, electric contrast",
+    best_for: "Comparisons, debates, matchups",
+    sample_topics: ["iPhone vs Android 2026", "Free tools vs paid tools"],
+  },
+  {
+    id: "gaming-neon",
+    name: "Gaming Neon",
+    category: "Gaming",
+    description: "RGB neon, HUD overlays, esports hype energy.",
+    style_prompt:
+      "Gaming thumbnail: neon RGB glow, character or controller hero shot, HUD elements, particle trails, competitive esports energy, ultra sharp",
+    text_style: "ALL CAPS hype words, glitch edge",
+    colors: "Neon pink, cyan, purple black",
+    best_for: "Gameplay, ranked climbs, reviews",
+    sample_topics: ["I hit Radiant with a potato PC", "Secret OP loadout"],
+  },
+  {
+    id: "fitness-flex",
+    name: "Fitness Flex",
+    category: "Fitness",
+    description: "Body transformation energy, sweat, hard lighting.",
+    style_prompt:
+      "Fitness thumbnail: athletic body language, sweat sheen, hard directional lighting, gym background blur, motivational intensity",
+    text_style: "SHORT + DAYS / RESULT claim",
+    colors: "Black, red, white",
+    best_for: "Workouts, weight loss, challenges",
+    sample_topics: ["30-day body challenge results", "Home workout no equipment"],
+  },
+  {
+    id: "food-crave",
+    name: "Food Crave",
+    category: "Food",
+    description: "Macro food porn, steam, extreme close-up.",
+    style_prompt:
+      "Food thumbnail: extreme macro of dish, glistening texture, rising steam, shallow depth of field, mouth-watering appetizing light",
+    text_style: "Recipe name or TIME claim",
+    colors: "Warm orange, cream, deep red",
+    best_for: "Recipes, street food, mukbangs",
+    sample_topics: ["Perfect crispy chicken in 10 min", "Street food that broke me"],
+  },
+  {
+    id: "minimal-authority",
+    name: "Clean Authority",
+    category: "Education",
+    description: "Minimal expert look — calm, premium, credible.",
+    style_prompt:
+      "Premium minimal thumbnail: clean negative space, one confident subject or icon, soft gradient backdrop, editorial magazine quality, no clutter",
+    text_style: "Elegant short phrase, high contrast",
+    colors: "Navy, white, soft gold",
+    best_for: "Explainers, courses, thought leadership",
+    sample_topics: ["The only productivity system I use", "How systems beat motivation"],
+  },
+  {
+    id: "red-circle",
+    name: "Red Circle",
+    category: "Viral",
+    description: "Classic red circle/arrow on the key detail.",
+    style_prompt:
+      "Classic YouTube clickbait: real photo composition, thick red circle or arrow highlighting one critical detail, slight zoom, urgent attention grab",
+    text_style: "YOU WON'T BELIEVE or WHAT?!",
+    colors: "Natural photo + pure red overlay",
+    best_for: "Fails, finds, hidden details",
+    sample_topics: ["Look at the top-right corner", "They hid this in plain sight"],
+  },
+  {
+    id: "cinematic-trailer",
+    name: "Cinematic Trailer",
+    category: "Entertainment",
+    description: "Movie-poster lighting, epic scale, drama.",
+    style_prompt:
+      "Cinematic trailer thumbnail: anamorphic bokeh, volumetric god rays, epic scale, film-grain subtle, blockbuster poster composition",
+    text_style: "Title case, 2–3 dramatic words",
+    colors: "Teal and orange, deep blacks",
+    best_for: "Story videos, recaps, film-style content",
+    sample_topics: ["The night everything changed", "This true story feels fake"],
+  },
+  {
+    id: "news-breaking",
+    name: "Breaking News",
+    category: "News",
+    description: "Urgent banner style, bold headlines, live energy.",
+    style_prompt:
+      "Breaking news thumbnail: urgent lower-third banner feel, bold headline block, serious face or key image, LIVE / BREAKING energy, high urgency",
+    text_style: "BREAKING + short claim",
+    colors: "Red, white, dark navy",
+    best_for: "Updates, drama, industry news",
+    sample_topics: ["YouTube just changed the algorithm", "This update ruins small channels"],
+  },
+  {
+    id: "cartoon-pop",
+    name: "Cartoon Pop",
+    category: "Kids / Fun",
+    description: "Bold cartoon outlines, playful sticker energy.",
+    style_prompt:
+      "Cartoon pop thumbnail: bold outlines, sticker-like characters, exaggerated expressions, playful props, comic-book energy, super readable shapes",
+    text_style: "Bubble letters, fun exclamation",
+    colors: "Primary rainbow, thick black lines",
+    best_for: "Kids, comedy, animated explainers",
+    sample_topics: ["If animals had jobs", "School rules that make no sense"],
+  },
+  {
+    id: "luxury-flex",
+    name: "Luxury Flex",
+    category: "Lifestyle",
+    description: "Rich textures, gold accents, aspirational lifestyle.",
+    style_prompt:
+      "Luxury lifestyle thumbnail: rich textures, gold accents, premium products or cars, soft bokeh, aspirational wealth aesthetic, crisp editorial lighting",
+    text_style: "Quiet flex 2–3 words",
+    colors: "Black, gold, champagne",
+    best_for: "Luxury reviews, travel, success stories",
+    sample_topics: ["$1 hotel vs $10,000 suite", "My first class flight experience"],
   },
 ];
 

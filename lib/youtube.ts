@@ -62,12 +62,70 @@ export async function getChannelVideos(uploadsPlaylistId: string, maxResults = 1
   return { playlist, stats };
 }
 
-export async function getChannelFromUrl(url: string) {
-  const handleMatch = url.match(/@([\w.-]+)/);
-  const idMatch = url.match(/channel\/(UC[\w-]+)/);
+export async function getChannelByUsername(username: string) {
+  return yt("channels", {
+    part: "snippet,statistics,contentDetails",
+    forUsername: username,
+  });
+}
 
+async function searchChannelByQuery(query: string) {
+  const search = await yt("search", {
+    part: "snippet",
+    q: query,
+    type: "channel",
+    maxResults: "1",
+  });
+  const channelId =
+    search.items?.[0]?.id?.channelId || search.items?.[0]?.snippet?.channelId;
+  if (!channelId) return null;
+  return getChannelById(channelId);
+}
+
+/** Normalize paste input: bare @handle, missing protocol, full URL, etc. */
+export function normalizeChannelInput(input: string): string {
+  const s = input.trim();
+  if (!s) return s;
+  if (s.startsWith("@")) return `https://www.youtube.com/${s}`;
+  if (/^UC[\w-]{20,}$/.test(s)) return `https://www.youtube.com/channel/${s}`;
+  if (!/^https?:\/\//i.test(s)) {
+    if (s.includes("youtube.com") || s.includes("youtu.be")) {
+      return `https://${s.replace(/^\/+/, "")}`;
+    }
+    return `https://www.youtube.com/@${s.replace(/^@/, "")}`;
+  }
+  return s;
+}
+
+export async function getChannelFromUrl(url: string) {
+  const input = normalizeChannelInput(url);
+
+  // Bare or path @handle
+  const handleMatch = input.match(/@([\w.-]+)/);
   if (handleMatch) return getChannelByHandle(handleMatch[1]);
+
+  // /channel/UCxxxx
+  const idMatch = input.match(/channel\/(UC[\w-]+)/);
   if (idMatch) return getChannelById(idMatch[1]);
+
+  // Legacy /user/username
+  const userMatch = input.match(/\/user\/([\w.-]+)/);
+  if (userMatch) {
+    const byUser = await getChannelByUsername(userMatch[1]);
+    if (byUser.items?.length) return byUser;
+    const fallback = await searchChannelByQuery(userMatch[1]);
+    if (fallback) return fallback;
+  }
+
+  // Custom /c/Name or /Name
+  const customMatch =
+    input.match(/\/c\/([\w.-]+)/) ||
+    input.match(/youtube\.com\/([\w.-]+)\/?(?:\?|$)/);
+  if (customMatch && !["watch", "shorts", "embed", "playlist", "feed", "results"].includes(customMatch[1])) {
+    const found = await searchChannelByQuery(customMatch[1]);
+    if (found) return found;
+  }
+
   throw new Error("Could not parse channel URL. Use format: youtube.com/@handle");
 }
 
