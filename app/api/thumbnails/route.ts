@@ -1,28 +1,14 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { denyUnlessFeature } from "@/lib/requireFeature";
-import { callAI, callVisionAI } from "@/lib/openrouter";
+import { callVisionAI } from "@/lib/openrouter";
 import { safeJsonParse } from "@/lib/utils";
 
 export const maxDuration = 60;
 
-export async function POST(req: NextRequest) {
-  try {
-    const supabase = await createClient();
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    const denied = await denyUnlessFeature(user.id, "optimize");
-    if (denied) return denied;
+const MAX_IMAGE_BYTES = 5 * 1024 * 1024;
 
-    const { imageUrl, description } = await req.json();
-
-    if (!imageUrl && !description) {
-      return NextResponse.json({ error: "Provide an image URL or description" }, { status: 400 });
-    }
-
-    let raw: string;
-
-    const jsonInstruction = `Return ONLY valid JSON (no markdown, no code fences):
+const jsonInstruction = `Return ONLY valid JSON (no markdown, no code fences):
 {
   "overall_score": number 0-100,
   "text_score": number 0-100,
@@ -39,8 +25,38 @@ export async function POST(req: NextRequest) {
   "ctr_prediction": "low" | "medium" | "high"
 }`;
 
-    if (imageUrl) {
-      const visionPrompt = `You are a YouTube thumbnail expert. Analyze this thumbnail image for click-through rate (CTR) potential.
+async function fileToDataUrl(file: File): Promise<string> {
+  const buffer = Buffer.from(await file.arrayBuffer());
+  const mime = file.type || "image/jpeg";
+  return `data:${mime};base64,${buffer.toString("base64")}`;
+}
+
+export async function POST(req: NextRequest) {
+  try {
+    const supabase = await createClient();
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    const denied = await denyUnlessFeature(user.id, "optimize");
+    if (denied) return denied;
+
+    const formData = await req.formData();
+    const file = formData.get("image");
+
+    if (!(file instanceof File)) {
+      return NextResponse.json({ error: "Upload a thumbnail image to analyze" }, { status: 400 });
+    }
+
+    if (!file.type.startsWith("image/")) {
+      return NextResponse.json({ error: "File must be an image (JPG, PNG, WebP)" }, { status: 400 });
+    }
+
+    if (file.size > MAX_IMAGE_BYTES) {
+      return NextResponse.json({ error: "Image must be under 5MB" }, { status: 400 });
+    }
+
+    const imageDataUrl = await fileToDataUrl(file);
+
+    const visionPrompt = `You are a YouTube thumbnail expert. Analyze this thumbnail image for click-through rate (CTR) potential.
 
 Score and evaluate:
 - Overall thumbnail quality (0-100)
@@ -51,28 +67,22 @@ Score and evaluate:
 
 ${jsonInstruction}`;
 
-      raw = await callVisionAI(visionPrompt, imageUrl);
-    } else {
-      const textPrompt = `You are a YouTube thumbnail expert. A creator has described their thumbnail: "${description}"
+    const raw = await callVisionAI(visionPrompt, imageDataUrl);
+    const result = safeJsonParse(raw, {});
 
-Analyze this thumbnail description for click-through rate (CTR) potential based on YouTube best practices.
-
-${jsonInstruction}`;
-
-      raw = await callAI(
-        [{ role: "user", content: textPrompt }],
-        { json: true, temperature: 0.4 }
+    if (!result || Object.keys(result).length === 0) {
+      return NextResponse.json(
+        { error: "AI returned an empty analysis. Try again." },
+        { status: 502 }
       );
     }
-
-    const result = safeJsonParse(raw, {});
 
     // Save to DB (non-fatal)
     try {
       await supabase.from("thumbnail_analyses").insert({
         user_id: user.id,
-        image_url: imageUrl || null,
-        description: description || null,
+        image_url: null,
+        description: `upload:${file.name}`,
         result,
       });
     } catch (dbErr) {
@@ -82,6 +92,16 @@ ${jsonInstruction}`;
     return NextResponse.json({ result });
   } catch (err: any) {
     console.error("[Thumbnails] Fatal error:", err.message);
-    return NextResponse.json({ error: "Failed to analyze thumbnail", details: err.message }, { status: 500 });
+    const message = err?.message || "Failed to analyze thumbnail";
+    if (/No endpoints found/i.test(message)) {
+      return NextResponse.json(
+        {
+          error:
+            "Vision model unavailable. Set OPENROUTER_VISION_MODEL to google/gemini-2.5-flash and restart the server.",
+        },
+        { status: 502 }
+      );
+    }
+    return NextResponse.json({ error: message }, { status: 500 });
   }
 }

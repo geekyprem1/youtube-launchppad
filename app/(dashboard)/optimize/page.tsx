@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Header } from "@/components/layout/Header";
 import { Card, CardBody, CardHeader } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
@@ -20,6 +20,8 @@ import {
   AlertTriangle,
   Sparkles,
   Rocket,
+  Upload,
+  X,
 } from "lucide-react";
 
 type Tab = "checklist" | "title" | "thumbnail";
@@ -123,11 +125,18 @@ export default function OptimizePage() {
   const [copied, setCopied] = useState<string | null>(null);
 
   // Thumbnail state
-  const [imageUrl, setImageUrl] = useState("");
-  const [thumbDesc, setThumbDesc] = useState("");
+  const [thumbFile, setThumbFile] = useState<File | null>(null);
+  const [thumbPreview, setThumbPreview] = useState<string | null>(null);
   const [thumbResult, setThumbResult] = useState<ThumbnailResult | null>(null);
   const [thumbLoading, setThumbLoading] = useState(false);
   const [thumbError, setThumbError] = useState("");
+  const thumbInputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    return () => {
+      if (thumbPreview) URL.revokeObjectURL(thumbPreview);
+    };
+  }, [thumbPreview]);
 
   // Checklist state
   const [clTitle, setClTitle] = useState("");
@@ -166,18 +175,42 @@ export default function OptimizePage() {
     }
   }
 
+  function handleThumbSelect(file: File | null) {
+    if (!file) return;
+    if (!file.type.startsWith("image/")) {
+      setThumbError("Please upload an image file (JPG, PNG, or WebP)");
+      return;
+    }
+    if (file.size > 5 * 1024 * 1024) {
+      setThumbError("Image must be under 5MB");
+      return;
+    }
+    if (thumbPreview) URL.revokeObjectURL(thumbPreview);
+    setThumbFile(file);
+    setThumbPreview(URL.createObjectURL(file));
+    setThumbResult(null);
+    setThumbError("");
+  }
+
+  function clearThumb() {
+    if (thumbPreview) URL.revokeObjectURL(thumbPreview);
+    setThumbFile(null);
+    setThumbPreview(null);
+    setThumbResult(null);
+    setThumbError("");
+    if (thumbInputRef.current) thumbInputRef.current.value = "";
+  }
+
   async function analyzeThumbnail() {
-    if (!imageUrl.trim() && !thumbDesc.trim()) return;
+    if (!thumbFile) return;
     setThumbLoading(true);
     setThumbError("");
     try {
+      const formData = new FormData();
+      formData.append("image", thumbFile);
       const res = await fetch("/api/thumbnails", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          imageUrl: imageUrl.trim() || undefined,
-          description: thumbDesc.trim() || undefined,
-        }),
+        body: formData,
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error);
@@ -784,27 +817,57 @@ export default function OptimizePage() {
         {tab === "thumbnail" && (
           <div className="space-y-4">
             <Card>
-              <CardBody className="space-y-3">
-                <Input
-                  label="Thumbnail Image URL"
-                  value={imageUrl}
-                  onChange={(e) => setImageUrl(e.target.value)}
-                  placeholder="https://i.ytimg.com/vi/... or any image URL"
+              <CardBody className="space-y-4">
+                <input
+                  ref={thumbInputRef}
+                  type="file"
+                  accept="image/jpeg,image/png,image/webp,image/gif"
+                  className="hidden"
+                  onChange={(e) => handleThumbSelect(e.target.files?.[0] ?? null)}
                 />
-                <div className="text-center text-xs text-gray-400">
-                  — or describe your thumbnail —
-                </div>
-                <Textarea
-                  label="Thumbnail Description"
-                  value={thumbDesc}
-                  onChange={(e) => setThumbDesc(e.target.value)}
-                  placeholder="e.g. Red background, large yellow text, shocked face..."
-                  rows={3}
-                />
+
+                {!thumbPreview ? (
+                  <button
+                    type="button"
+                    onClick={() => thumbInputRef.current?.click()}
+                    onDragOver={(e) => e.preventDefault()}
+                    onDrop={(e) => {
+                      e.preventDefault();
+                      handleThumbSelect(e.dataTransfer.files?.[0] ?? null);
+                    }}
+                    className="w-full border-2 border-dashed border-gray-200 rounded-xl p-8 text-center hover:border-blue-300 hover:bg-blue-50/30 transition-colors"
+                  >
+                    <Upload className="w-10 h-10 text-gray-400 mx-auto mb-3" />
+                    <p className="text-sm font-medium text-gray-900">
+                      Upload your thumbnail
+                    </p>
+                    <p className="text-xs text-gray-500 mt-1">
+                      Drag & drop or click to browse · JPG, PNG, WebP · max 5MB
+                    </p>
+                  </button>
+                ) : (
+                  <div className="relative rounded-xl overflow-hidden border border-gray-200 bg-gray-50">
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img
+                      src={thumbPreview}
+                      alt="Thumbnail preview"
+                      className="w-full max-h-72 object-contain mx-auto"
+                    />
+                    <button
+                      type="button"
+                      onClick={clearThumb}
+                      className="absolute top-2 right-2 p-1.5 rounded-full bg-white/90 border border-gray-200 text-gray-500 hover:text-gray-800 shadow-sm"
+                      aria-label="Remove thumbnail"
+                    >
+                      <X className="w-4 h-4" />
+                    </button>
+                  </div>
+                )}
+
                 <Button
                   onClick={analyzeThumbnail}
                   loading={thumbLoading}
-                  disabled={!imageUrl.trim() && !thumbDesc.trim()}
+                  disabled={!thumbFile}
                   className="w-full"
                 >
                   Analyze Thumbnail
