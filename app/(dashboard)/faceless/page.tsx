@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { Header } from "@/components/layout/Header";
 import { Card, CardBody, CardHeader } from "@/components/ui/Card";
@@ -80,6 +80,33 @@ export default function FacelessPage() {
     () => FACELESS_TEMPLATES.find((t) => t.id === templateId),
     [templateId]
   );
+
+  useEffect(() => {
+    try {
+      const topicPrefill = sessionStorage.getItem("competitor_gap_topic");
+      if (!topicPrefill) return;
+
+      setTopic(topicPrefill);
+      sessionStorage.removeItem("competitor_gap_topic");
+
+      const notesPrefill = sessionStorage.getItem("competitor_gap_notes");
+      if (notesPrefill) {
+        setNotes(notesPrefill);
+        sessionStorage.removeItem("competitor_gap_notes");
+      }
+
+      const videoTypePrefill = sessionStorage.getItem("competitor_gap_video_type");
+      if (videoTypePrefill === "short" || videoTypePrefill === "long") {
+        setVideoType(videoTypePrefill);
+        sessionStorage.removeItem("competitor_gap_video_type");
+      }
+
+      setTemplateId((current) => current ?? FACELESS_TEMPLATES[0]?.id ?? null);
+      setStep(2);
+    } catch {
+      // ignore
+    }
+  }, []);
 
   async function copyText(text: string) {
     await navigator.clipboard.writeText(text);

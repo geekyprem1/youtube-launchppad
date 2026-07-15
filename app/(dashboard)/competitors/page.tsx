@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { Header } from "@/components/layout/Header";
 import { Card, CardBody } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
@@ -17,6 +18,7 @@ import {
 } from "lucide-react";
 
 export default function CompetitorsPage() {
+  const router = useRouter();
   const [channelUrl, setChannelUrl] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -68,6 +70,29 @@ export default function CompetitorsPage() {
     if (l === "medium") return "bg-yellow-100 text-yellow-800";
     return "bg-green-100 text-green-800";
   };
+
+  function executeGap(gap: {
+    gap_type: string;
+    description: string;
+    action: string;
+  }) {
+    if (!result) return;
+    try {
+      sessionStorage.setItem("competitor_gap_topic", gap.action);
+      sessionStorage.setItem(
+        "competitor_gap_notes",
+        `[${gap.gap_type}] ${gap.description}\n\nCompetitor: ${result.channel_name}`
+      );
+      const isShortForm = /format|short/i.test(gap.gap_type);
+      sessionStorage.setItem(
+        "competitor_gap_video_type",
+        isShortForm ? "short" : "long"
+      );
+    } catch {
+      // ignore storage errors
+    }
+    router.push("/faceless");
+  }
 
   return (
     <>
@@ -234,6 +259,7 @@ export default function CompetitorsPage() {
                         <div className="md:w-40 shrink-0 flex flex-col justify-end">
                           <Button
                             size="sm"
+                            onClick={() => executeGap(gap)}
                             className="w-full bg-blue-600 hover:bg-blue-700 text-white border-none shadow-sm"
                           >
                             <PenTool className="w-3.5 h-3.5 mr-2" /> Execute
