@@ -160,3 +160,124 @@ export function formatCount(n: string | number): string {
   if (num >= 1_000) return `${(num / 1_000).toFixed(1)}K`;
   return String(num);
 }
+
+/**
+ * Aggregated topic/niche signals derived from live YouTube data.
+ * Used by Predictor and Ideas/Recommendations to replace mock metrics.
+ * `available: false` means no API key or no usable results — callers should
+ * fall back gracefully instead of hard-crashing.
+ */
+export interface TopicInsights {
+  available: boolean;
+  sampleSize: number;
+  avgViews: number;
+  medianViews: number;
+  maxViews: number;
+  recentVideoCount: number; // among sample, published within last 90 days
+  keywordDensity: number; // 0-1, fraction of result titles containing the query terms
+  trendMomentum: number; // ratio of newer-half vs older-half avg views (~1 = flat)
+}
+
+function median(nums: number[]): number {
+  if (nums.length === 0) return 0;
+  const sorted = [...nums].sort((a, b) => a - b);
+  const mid = Math.floor(sorted.length / 2);
+  return sorted.length % 2 !== 0
+    ? sorted[mid]
+    : Math.round((sorted[mid - 1] + sorted[mid]) / 2);
+}
+
+/**
+ * Fetches top videos for a query, pulls their real view statistics, and
+ * computes demand / competition / trend signals from them.
+ */
+export async function getTopicInsights(query: string, sample = 12): Promise<TopicInsights> {
+  const empty: TopicInsights = {
+    available: false,
+    sampleSize: 0,
+    avgViews: 0,
+    medianViews: 0,
+    maxViews: 0,
+    recentVideoCount: 0,
+    keywordDensity: 0,
+    trendMomentum: 1,
+  };
+
+  if (!process.env.YOUTUBE_API_KEY) return empty;
+
+  try {
+    const search = await searchVideos(query, sample);
+    const items: Array<{ id?: { videoId?: string } }> = search.items || [];
+    const ids = items
+      .map((i) => i.id?.videoId)
+      .filter((v): v is string => Boolean(v));
+    if (ids.length === 0) return empty;
+
+    // videos endpoint accepts comma-separated ids
+    const statsRes = await getVideoInfo(ids.join(","));
+    const vids: Array<{
+      snippet?: { title?: string; publishedAt?: string };
+      statistics?: { viewCount?: string };
+    }> = statsRes.items || [];
+    if (vids.length === 0) return empty;
+
+    const views = vids.map((v) => parseInt(v.statistics?.viewCount || "0", 10));
+    const avgViews = Math.round(views.reduce((a, b) => a + b, 0) / views.length);
+    const maxViews = Math.max(...views);
+    const medViews = median(views);
+
+    const now = Date.now();
+    const NINETY_DAYS = 90 * 24 * 60 * 60 * 1000;
+    let recentVideoCount = 0;
+
+    // Query keyword density across titles
+    const queryWords = query
+      .toLowerCase()
+      .replace(/[^\w\s]/g, " ")
+      .split(/\s+/)
+      .filter((w) => w.length > 2);
+    let titlesWithKeyword = 0;
+
+    // Trend: compare newer half vs older half by publish date
+    const dated = vids
+      .map((v) => ({
+        views: parseInt(v.statistics?.viewCount || "0", 10),
+        date: v.snippet?.publishedAt ? new Date(v.snippet.publishedAt).getTime() : 0,
+        title: (v.snippet?.title || "").toLowerCase(),
+      }))
+      .filter((d) => d.date > 0)
+      .sort((a, b) => b.date - a.date);
+
+    for (const d of dated) {
+      if (now - d.date <= NINETY_DAYS) recentVideoCount++;
+      if (queryWords.length === 0 || queryWords.some((w) => d.title.includes(w))) {
+        titlesWithKeyword++;
+      }
+    }
+
+    const keywordDensity = dated.length > 0 ? titlesWithKeyword / dated.length : 0;
+
+    let trendMomentum = 1;
+    if (dated.length >= 4) {
+      const half = Math.floor(dated.length / 2);
+      const newer = dated.slice(0, half);
+      const older = dated.slice(half);
+      const newerAvg = newer.reduce((a, b) => a + b.views, 0) / newer.length;
+      const olderAvg = older.reduce((a, b) => a + b.views, 0) / older.length || 1;
+      trendMomentum = Math.min(2, Math.max(0.5, newerAvg / olderAvg));
+    }
+
+    return {
+      available: true,
+      sampleSize: vids.length,
+      avgViews,
+      medianViews: medViews,
+      maxViews,
+      recentVideoCount,
+      keywordDensity: Math.min(1, Math.max(0, keywordDensity)),
+      trendMomentum: Math.round(trendMomentum * 100) / 100,
+    };
+  } catch {
+    return empty;
+  }
+}

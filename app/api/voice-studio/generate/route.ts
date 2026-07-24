@@ -74,6 +74,12 @@ export async function POST(req: NextRequest) {
     });
   } catch (err) {
     logError("VOICE_STUDIO_GENERATE", err);
-    return NextResponse.json({ error: "Failed to generate voiceover" }, { status: 500 });
+    const message = err instanceof Error ? err.message : "Unknown error";
+    // Surface provider errors (e.g. invalid TTS model/voice, insufficient credits)
+    // so the issue is diagnosable instead of a generic 500.
+    return NextResponse.json(
+      { error: "Failed to generate voiceover", details: message },
+      { status: 500 }
+    );
   }
 }

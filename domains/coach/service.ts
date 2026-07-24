@@ -6,15 +6,20 @@ import { generateAIResponse } from "../../core/openrouter";
 import { validateAIResponse } from "../../core/validation";
 import { CoachAnalysisSchema, CoachRequest } from "./types";
 import { APIResponse } from "../../types/api";
+import type { SupabaseClient } from "@supabase/supabase-js";
 
 const FALLBACK_ANALYSIS = {
   reply: "I'm having trouble connecting to my brain right now. Can we try again in a moment?",
   suggested_actions: []
 };
 
-export async function processCoachChat(userId: string, request: CoachRequest): Promise<APIResponse> {
-  // 1. Data Layer
-  const rawContext = await fetchCoachContext(userId);
+export async function processCoachChat(
+  userId: string,
+  request: CoachRequest,
+  supabase?: SupabaseClient
+): Promise<APIResponse> {
+  // 1. Data Layer — real per-user context
+  const rawContext = await fetchCoachContext(userId, supabase);
 
   // 2. Feature Extraction
   const features = extractCoachFeatures(rawContext);
@@ -48,6 +53,7 @@ export async function processCoachChat(userId: string, request: CoachRequest): P
     },
     metrics: {
       context_score: contextScore.total,
+      data_source: rawContext.dataSource,
     },
     analysis,
   } as any; 

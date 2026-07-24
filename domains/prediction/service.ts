@@ -85,6 +85,7 @@ export async function processPrediction(request: PredictionRequest): Promise<API
       confidence: confidence,
       estimated_ctr: `${Math.round(features.packagingScore / 10)}% - ${Math.round(features.packagingScore / 10) + 2}%`,
       estimated_retention: `${Math.round(features.demandScore / 2)}% at 3:00`,
+      data_source: rawData.dataSource,
     },
     analysis,
   } as any; 

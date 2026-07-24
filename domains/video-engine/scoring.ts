@@ -1,4 +1,5 @@
 import { VideoType } from "./types";
+import type { TopicInsights } from "../../lib/youtube";
 
 // ─── Scoring Engine ───────────────────────────────────────────────────────────
 // All scoring is deterministic math — no AI needed for these values.
@@ -46,11 +47,13 @@ export function scoreTopicOpportunity(features: ScoringFeatures): ScoreResult {
 
 /**
  * Assigns a hook confidence score based on hook type baseline.
- * Each type has a natural baseline; random variance ±10 is added.
+ * Deterministic: variance is derived from the hook text hash (not random),
+ * so the same hook always yields the same score across calls and cache hits.
  */
 export function scoreHookConfidence(
   hookType: "Curiosity" | "Story" | "Shocking Fact" | "Question" | "FOMO",
-  topicDemand: number
+  topicDemand: number,
+  hookText = ""
 ): number {
   const baselines: Record<typeof hookType, number> = {
     "Curiosity": 82,
@@ -61,7 +64,9 @@ export function scoreHookConfidence(
   };
   const base = baselines[hookType];
   const demandBonus = Math.round(topicDemand * 0.1);
-  const variance = Math.floor(Math.random() * 11) - 5;
+  // Deterministic ±5 variance from a stable hash of the hook text.
+  const hash = hookText.split("").reduce((acc, c) => acc + c.charCodeAt(0), 0);
+  const variance = (hash % 11) - 5;
   return Math.min(99, Math.max(60, base + demandBonus + variance));
 }
 
@@ -94,7 +99,8 @@ export function getDurationLabel(wordCount: number, videoType: VideoType): strin
 }
 
 /**
- * Simulates niche features when no real data source is available.
+ * Fallback niche features when no real data source is available.
+ * Deterministic pseudo-random based on niche string hash (labelled as estimate).
  */
 export function simulateNicheFeatures(niche: string): ScoringFeatures {
   // Deterministic pseudo-random based on niche string hash
@@ -105,4 +111,18 @@ export function simulateNicheFeatures(niche: string): ScoringFeatures {
     trend: 40 + (hash % 50),
     channelFit: 70,
   };
+}
+
+/**
+ * Maps live YouTube topic signals into scoring features (real data path).
+ * - demand: median views of top results (200k views ≈ 100)
+ * - competition: share of recent (≤90d) videos among top results
+ * - trend: view momentum (newer vs older half; ~1.0 momentum ≈ 50)
+ */
+export function nicheFeaturesFromInsights(insights: TopicInsights): ScoringFeatures {
+  const demand = Math.min(100, Math.max(0, Math.round((insights.medianViews / 200000) * 100)));
+  const recentRatio = insights.sampleSize > 0 ? insights.recentVideoCount / insights.sampleSize : 0;
+  const competition = Math.min(100, Math.max(0, Math.round(recentRatio * 100)));
+  const trend = Math.min(100, Math.max(0, Math.round(50 * insights.trendMomentum)));
+  return { demand, competition, trend, channelFit: 70 };
 }

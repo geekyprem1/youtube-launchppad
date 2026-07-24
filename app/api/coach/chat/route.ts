@@ -21,7 +21,7 @@ export async function POST(req: NextRequest) {
     }
 
     // Process using the Domain Service Orchestrator
-    const result = await processCoachChat(userId, parsedRequest.data);
+    const result = await processCoachChat(userId, parsedRequest.data, supabase);
 
     // Save chat interaction to DB
     if (user) {

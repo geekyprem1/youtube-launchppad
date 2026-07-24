@@ -47,7 +47,12 @@ export async function POST(req: NextRequest) {
     const cached = await readCache<typeof FALLBACK_HOOKS>(cacheKey);
 
     if (cached) {
-      const hooks = cached.hooks.map((h, i) => ({ id: String(i + 1), ...h }));
+      const hooks = cached.hooks.map((h, i) => ({
+        id: String(i + 1),
+        text: h.text,
+        type: h.type,
+        confidence_score: scoreHookConfidence(h.type, 70, h.text),
+      }));
       return NextResponse.json({ ok: true, step: "hooks", cache_hit: true, credits_consumed: 0, data: { hooks } });
     }
 
@@ -67,7 +72,7 @@ export async function POST(req: NextRequest) {
       id: String(i + 1),
       text: h.text,
       type: h.type,
-      confidence_score: scoreHookConfidence(h.type, 70),
+      confidence_score: scoreHookConfidence(h.type, 70, h.text),
     }));
 
     await writeCache(cacheKey, "hooks", { hooks: parsed.hooks });

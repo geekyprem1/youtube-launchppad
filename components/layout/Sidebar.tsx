@@ -20,12 +20,13 @@ import {
   Flame,
   Film,
   Lock,
-  Sparkles,
   DollarSign,
   Wallet,
   Ghost,
   Crown,
   Radar,
+  LifeBuoy,
+  Gift,
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { useRouter } from "next/navigation";
@@ -132,21 +133,6 @@ export function Sidebar() {
     isAdmin ||
     ownsOto(unlockedOtos, "oto12") ||
     canAccess(plan, unlockedOtos, "vip", { isAdmin });
-
-  const hasAllAccess =
-    isAdmin ||
-    canAccess(plan, unlockedOtos, "voice_studio", { isAdmin }) &&
-      canAccess(plan, unlockedOtos, "toolkit", { isAdmin }) &&
-      canAccess(plan, unlockedOtos, "predictor", { isAdmin });
-
-  // CTA for free / fe (and partial plans) — hide when everything is already open
-  const showUpgradeCta =
-    !isAdmin &&
-    (plan === "free" ||
-      plan === "fe" ||
-      plan === "starter" ||
-      plan === "pro" ||
-      !hasAllAccess);
 
   function itemUnlocked(featureKey: AccessFeatureKey) {
     return canAccess(plan, unlockedOtos, featureKey, { isAdmin });
@@ -286,16 +272,6 @@ export function Sidebar() {
               Video Engine credits
             </p>
           </div>
-          {showUpgradeCta && (
-            <Link
-              href="/upgrade"
-              onClick={() => setIsOpen(false)}
-              className="flex items-center justify-center gap-1.5 w-full px-3 py-2 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-lg text-sm font-bold shadow-sm hover:from-blue-700 hover:to-indigo-700 transition-colors mb-2"
-            >
-              <Sparkles className="w-3.5 h-3.5" />
-              Upgrade OTOs
-            </Link>
-          )}
           {plan === "free" && (
             <div className="px-2 mb-2 space-y-1.5">
               <p className="px-1 text-[10px] text-gray-400 leading-snug">
@@ -311,6 +287,36 @@ export function Sidebar() {
               </Link>
             </div>
           )}
+          <Link
+            href="/bonuses"
+            onClick={() => setIsOpen(false)}
+            className={cn(
+              "flex items-center gap-3 w-full px-3 py-2 rounded-lg text-sm font-medium transition-colors",
+              pathname.startsWith("/bonuses")
+                ? "bg-amber-50 text-amber-800"
+                : "text-gray-500 hover:bg-gray-50 hover:text-gray-700"
+            )}
+          >
+            <Gift
+              className={cn(
+                "w-4 h-4",
+                pathname.startsWith("/bonuses")
+                  ? "text-amber-600"
+                  : "text-gray-400"
+              )}
+            />
+            Bonus Download
+          </Link>
+          <a
+            href="https://creatorosai.tawk.help/"
+            target="_blank"
+            rel="noopener noreferrer"
+            onClick={() => setIsOpen(false)}
+            className="flex items-center gap-3 w-full px-3 py-2 rounded-lg text-sm font-medium text-gray-500 hover:bg-gray-50 hover:text-gray-700 transition-colors"
+          >
+            <LifeBuoy className="w-4 h-4 text-gray-400" />
+            Support
+          </a>
           <button
             onClick={signOut}
             className="flex items-center gap-3 w-full px-3 py-2 rounded-lg text-sm font-medium text-gray-500 hover:bg-gray-50 hover:text-gray-700 transition-colors"

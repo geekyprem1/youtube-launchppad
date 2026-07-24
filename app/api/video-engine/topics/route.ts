@@ -4,8 +4,9 @@ import { generateAIResponse } from "@/core/openrouter";
 import { validateAIResponse } from "@/core/validation";
 import { buildTopicsPrompt } from "@/domains/video-engine/prompts/topics-hooks";
 import { buildCacheKey, readCache, writeCache } from "@/domains/video-engine/cache";
-import { simulateNicheFeatures, scoreTopicOpportunity } from "@/domains/video-engine/scoring";
+import { simulateNicheFeatures, nicheFeaturesFromInsights, scoreTopicOpportunity } from "@/domains/video-engine/scoring";
 import { TopicsAIResponseSchema, TopicSchema } from "@/domains/video-engine/types";
+import { getTopicInsights } from "@/lib/youtube";
 import { logError } from "@/core/logger";
 
 const FALLBACK_TOPICS = {
@@ -38,14 +39,20 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: gate.error }, { status: gate.status });
     }
 
+    // Real niche features from live YouTube data (fallback to deterministic estimate)
+    const insights = await getTopicInsights(input);
+    const baseFeatures = insights.available
+      ? nicheFeaturesFromInsights(insights)
+      : simulateNicheFeatures(input);
+    const dataSource = insights.available ? "youtube" : "fallback";
+
     // Cache check
     const cacheKey = buildCacheKey("topics", { input, input_type });
     const cached = await readCache<typeof FALLBACK_TOPICS>(cacheKey);
 
     if (cached) {
-      const features = simulateNicheFeatures(input);
       const topics = cached.topics.map((t, i) => {
-        const { confidence, difficulty, opportunity } = scoreTopicOpportunity(features);
+        const { confidence, difficulty, opportunity } = scoreTopicOpportunity(baseFeatures);
         return {
           id: String(i + 1),
           topic: t.topic,
@@ -56,7 +63,7 @@ export async function POST(req: NextRequest) {
           reason: t.reason,
         };
       });
-      return NextResponse.json({ ok: true, step: "topics", cache_hit: true, credits_consumed: 0, data: { topics } });
+      return NextResponse.json({ ok: true, step: "topics", cache_hit: true, credits_consumed: 0, data: { topics, data_source: dataSource } });
     }
 
     // AI Call
@@ -68,11 +75,10 @@ export async function POST(req: NextRequest) {
 
     const parsed = validateAIResponse(rawResponse, TopicsAIResponseSchema, FALLBACK_TOPICS);
 
-    // Score each topic
-    const features = simulateNicheFeatures(input);
+    // Score each topic (blend real features with per-topic trend from the model)
     const topics = parsed.topics.map((t, i) => {
       const { confidence, difficulty, opportunity } = scoreTopicOpportunity({
-        ...features,
+        ...baseFeatures,
         trend: t.trend_score === "Viral" ? 95 : t.trend_score === "High" ? 75 : t.trend_score === "Medium" ? 50 : 25,
       });
       return {
@@ -94,7 +100,7 @@ export async function POST(req: NextRequest) {
       step: "topics",
       cache_hit: false,
       credits_consumed: creditState.unlimited ? 0 : 1,
-      data: { topics },
+      data: { topics, data_source: dataSource },
     });
 
   } catch (err) {

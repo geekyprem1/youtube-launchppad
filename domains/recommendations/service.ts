@@ -95,7 +95,7 @@ export async function processRecommendations(request: RecommendationRequest): Pr
       rules: ruleVersion,
       prompt: "v1.0",
     },
-    metrics: {},
+    metrics: { data_source: rawData.dataSource },
     analysis: {},
     ideas: formattedIdeas,
   } as any;
