@@ -76,10 +76,10 @@ Grant credits when an OTO is unlocked. Extend `app/api/admin/users/[id]/route.ts
 | OTO6 ViralPredict | $37 | $16.65 | **220** | 0 | $2.20 | 13% |
 | OTO7 WatchTime MAX | $29 | $13.05 | **180** | 0 | $1.80 | 14% |
 | OTO8 Creator Toolkit X | $39 | $17.55 | **220** | 0 | $2.20 | 13% |
-| OTO9 Faceless Empire | $79 | $35.55 | **500** | **32 clips** | ~$7.90 | 22% |
+| OTO9 Faceless Empire | $79 | $35.55 | **500** | **40 clips** | ~$9.75 | 27% |
 | OTO10 MoneyFlow | $49 | $22.05 | **250** | 0 | $2.50 | 11% |
 | OTO11 Profit Accelerator | $69 | $31.05 | **350** | 0 | $3.50 | 11% |
-| OTO12 Infinity | $169 | $76.05 | **1200** | **60 clips** | ~$15.60 | 20% |
+| OTO12 Infinity | $169 | $76.05 | **1200** | **80 clips** | ~$19.60 | 26% |
 
 > Credits are **lifetime pool** (no monthly refill). Top-up path = future OTO14.
 > `ai_video_credits` = number of full-render 10s clips (each also decrements 25 from `credits`, OR treat clips as a standalone counter — pick one; recommended: **clips counter only** for video, `credits` only for text/image/voice, so video never drains the text pool).
@@ -270,5 +270,5 @@ back in `getCreditState` (lib/credits.ts), `getVideoEngineCreditState` (lib/vide
 
 If every buyer burned their **entire** lifetime pool at worst-case rates:
 - Text/image/voice OTOs: COGS 11–17% of net → healthy.
-- Video OTOs (OTO9: 32 clips = $6.40; OTO12: 60 clips = $12.00): combined ~20–22% of net → still safe.
+- Video OTOs (OTO9: 40 clips = $8.00; OTO12: 80 clips = $16.00): combined ~26–27% of net → still ~73% margin.
 - Real-world usage is far lower (most credits never fully burned), so effective COGS ≈ 3–6% of net.

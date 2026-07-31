@@ -36,10 +36,10 @@ export const OTO_CREDIT_GRANTS: Record<string, { credits: number; aiVideo: numbe
   oto6: { credits: 220, aiVideo: 0 },
   oto7: { credits: 180, aiVideo: 0 },
   oto8: { credits: 220, aiVideo: 0 },
-  oto9: { credits: 500, aiVideo: 32 },
+  oto9: { credits: 500, aiVideo: 40 },
   oto10: { credits: 250, aiVideo: 0 },
   oto11: { credits: 350, aiVideo: 0 },
-  oto12: { credits: 1200, aiVideo: 60 },
+  oto12: { credits: 1200, aiVideo: 80 },
 };
 
 // ── Text/image/voice credit pool ─────────────────────────────────────
