@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { getPrediction, extractVideoUrl } from "@/core/replicate";
 import { denyUnlessFeature } from "@/lib/requireFeature";
+import { persistRemoteVideoSafe } from "@/lib/persistRemoteVideo";
 
 export async function GET(
   req: Request,
@@ -15,16 +16,43 @@ export async function GET(
     const denied = await denyUnlessFeature(user.id, "video_creation_pro");
     if (denied) return denied;
 
+    // If already finalized + persisted, return the stored permanent URL (avoid
+    // re-downloading / duplicate uploads on repeated polls).
+    const { data: existing } = await supabase
+      .from("video_engine_pro_generations")
+      .select("status, video_url")
+      .eq("replicate_prediction_id", params.predictionId)
+      .eq("user_id", user.id)
+      .single();
+
+    if (existing?.status === "succeeded" && existing.video_url) {
+      return NextResponse.json({
+        ok: true,
+        status: "succeeded",
+        videoUrl: existing.video_url,
+        error: null,
+      });
+    }
+
     const prediction = await getPrediction(params.predictionId);
-    const videoUrl = extractVideoUrl(prediction.output);
+    const tempVideoUrl = extractVideoUrl(prediction.output);
     const isDone = ["succeeded", "failed", "canceled"].includes(prediction.status);
+    const succeeded = prediction.status === "succeeded" && !!tempVideoUrl;
+
+    // On success, re-host the Replicate output on Supabase Storage so the link
+    // stays alive after Replicate deletes the temporary prediction output.
+    let finalVideoUrl = succeeded ? tempVideoUrl : null;
+    if (succeeded && tempVideoUrl) {
+      const { url } = await persistRemoteVideoSafe(supabase, user.id, tempVideoUrl);
+      finalVideoUrl = url;
+    }
 
     if (isDone) {
       await supabase
         .from("video_engine_pro_generations")
         .update({
           status: prediction.status,
-          video_url: prediction.status === "succeeded" ? videoUrl : null,
+          video_url: finalVideoUrl,
           error_message: prediction.error,
           completed_at: new Date().toISOString(),
         })
@@ -35,7 +63,7 @@ export async function GET(
     return NextResponse.json({
       ok: true,
       status: prediction.status,
-      videoUrl: prediction.status === "succeeded" ? videoUrl : null,
+      videoUrl: finalVideoUrl,
       error: prediction.error,
     });
 
