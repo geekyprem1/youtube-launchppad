@@ -4,7 +4,7 @@
  */
 
 import { createClient } from "@/lib/supabase/server";
-import { ALL_ACCESS_PLANS, ownsOto } from "@/lib/features";
+import { ALL_ACCESS_PLANS } from "@/lib/features";
 import type { PlanType } from "@/lib/plans";
 import { PLANS } from "@/lib/plans";
 
@@ -54,12 +54,11 @@ export async function getVideoEngineCreditState(
       ? data.video_engine_credits
       : null;
 
+  // Only legacy internal high-tier plans are truly unlimited. All OTOs use lifetime
+  // credit pools (see lib/credits.ts) so every generation is capped.
   const unlimited =
     (ALL_ACCESS_PLANS as readonly string[]).includes(planType) ||
-    planType === "pro" ||
-    ownsOto(unlockedOtos, "oto1") ||
-    ownsOto(unlockedOtos, "oto12") ||
-    ownsOto(unlockedOtos, "oto9"); // Faceless bundle includes kit-class production
+    planType === "pro";
 
   return { planType, credits, unlimited, unlockedOtos };
 }

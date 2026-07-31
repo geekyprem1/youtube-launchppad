@@ -21,8 +21,8 @@ export interface PlanConfig {
   features: string[];
 }
 
-/** FE seed credits when admin grants plan_type = 'fe' */
-export const FE_SEED_CREDITS = 100;
+/** FE seed credits when admin grants plan_type = 'fe' (FE = $11 → 60 lifetime credits) */
+export const FE_SEED_CREDITS = 60;
 
 export const PLANS: Record<PlanType, PlanConfig> = {
   free: {

@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { callAI } from "@/lib/openrouter";
+import { denyUnlessFeature } from "@/lib/requireFeature";
+import { getCreditState, creditGate, spendCredits, CREDIT_COST } from "@/lib/credits";
 import { buildThumbnailPromptRequest } from "@/domains/thumbnail-engine/prompt";
 import { persistRemoteImageSafe } from "@/lib/persistRemoteImage";
 
@@ -14,12 +16,20 @@ export async function POST(req: Request) {
     if (authError || !user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
+    const denied = await denyUnlessFeature(user.id, "thumbnail_basic");
+    if (denied) return denied;
 
     const body = await req.json();
     const { videoType, inputType, input, category, mood } = body;
 
     if (!videoType || !inputType || !input || !category || !mood) {
       return NextResponse.json({ error: "Missing required fields" }, { status: 400 });
+    }
+
+    const creditState = await getCreditState(user.id);
+    const gate = creditGate(creditState, CREDIT_COST.thumbnail);
+    if (!gate.ok) {
+      return NextResponse.json({ error: gate.error }, { status: gate.status });
     }
 
     // Step 1: Optimize the prompt using Gemini 2.5 Pro
@@ -112,6 +122,8 @@ export async function POST(req: Request) {
     if (dbError) {
       console.error("Failed to save thumbnail history:", dbError);
     }
+
+    await spendCredits(user.id, CREDIT_COST.thumbnail, creditState);
 
     return NextResponse.json({
       imageUrl,

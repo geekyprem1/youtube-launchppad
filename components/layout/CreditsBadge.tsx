@@ -2,15 +2,15 @@
 
 import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
-import { Coins, Infinity as InfinityIcon } from "lucide-react";
+import { Coins, Infinity as InfinityIcon, Clapperboard } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
-import { ownsOto } from "@/lib/features";
 import { PLANS, type PlanType } from "@/lib/plans";
 import { cn } from "@/lib/utils";
 
 type CreditsState = {
   loading: boolean;
   credits: number | null;
+  aiVideoCredits: number;
   unlimited: boolean;
   planName: string;
   planType: PlanType;
@@ -18,16 +18,10 @@ type CreditsState = {
 
 function computeUnlimited(
   planType: string,
-  unlockedOtos: string[]
+  _unlockedOtos: string[]
 ): boolean {
-  if (["pro", "elite", "creator_pro", "ultimate"].includes(planType)) {
-    return true;
-  }
-  return (
-    ownsOto(unlockedOtos, "oto1") ||
-    ownsOto(unlockedOtos, "oto9") ||
-    ownsOto(unlockedOtos, "oto12")
-  );
+  // Only legacy internal high-tier plans are unlimited. All OTOs use lifetime credit pools.
+  return ["pro", "elite", "creator_pro", "ultimate"].includes(planType);
 }
 
 /**
@@ -44,6 +38,7 @@ export function CreditsBadge({
   const [state, setState] = useState<CreditsState>({
     loading: true,
     credits: null,
+    aiVideoCredits: 0,
     unlimited: false,
     planName: "Free",
     planType: "free",
@@ -59,7 +54,7 @@ export function CreditsBadge({
 
       supabase
         .from("profiles")
-        .select("video_engine_credits, plan_type, unlocked_otos")
+        .select("video_engine_credits, ai_video_credits, plan_type, unlocked_otos")
         .eq("id", user.id)
         .single()
         .then(({ data, error }) => {
@@ -81,6 +76,7 @@ export function CreditsBadge({
                     typeof partial?.video_engine_credits === "number"
                       ? partial.video_engine_credits
                       : null,
+                  aiVideoCredits: 0,
                   unlimited,
                   planName: (PLANS[planType] ?? PLANS.free).name,
                   planType,
@@ -103,6 +99,10 @@ export function CreditsBadge({
               typeof data.video_engine_credits === "number"
                 ? data.video_engine_credits
                 : null,
+            aiVideoCredits:
+              typeof data.ai_video_credits === "number"
+                ? data.ai_video_credits
+                : 0,
             unlimited,
             planName: (PLANS[planType] ?? PLANS.free).name,
             planType,
@@ -176,16 +176,42 @@ export function CreditsBadge({
     </div>
   );
 
+  // Separate AI-video clip counter (only shown when the user has an allotment)
+  const videoBadge =
+    state.aiVideoCredits > 0 ? (
+      <div
+        className={cn(
+          "inline-flex items-center gap-1.5 rounded-full border font-semibold",
+          compact ? "px-2 py-1 text-[11px]" : "px-3 py-1.5 text-xs",
+          "bg-purple-50 border-purple-200 text-purple-800"
+        )}
+        title="AI video clips left (10s 720p each)"
+      >
+        <Clapperboard className={compact ? "w-3 h-3" : "w-3.5 h-3.5"} />
+        <span>
+          {state.aiVideoCredits} {compact ? "clip" : "video clips"}
+        </span>
+      </div>
+    ) : null;
+
   // Low credits → soft link to upgrade
-  if (!state.unlimited && (low || empty)) {
-    return (
+  const creditNode =
+    !state.unlimited && (low || empty) ? (
       <Link href="/upgrade" className="hover:opacity-90">
         {inner}
       </Link>
+    ) : (
+      inner
     );
-  }
 
-  return inner;
+  if (!videoBadge) return creditNode;
+
+  return (
+    <div className="inline-flex items-center gap-1.5">
+      {creditNode}
+      {videoBadge}
+    </div>
+  );
 }
 
 /** Compact plan + credits block for Header right side */

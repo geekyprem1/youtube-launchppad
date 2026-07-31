@@ -5,6 +5,7 @@ export const maxDuration = 60; // Vercel: extend timeout to 60s (free tier max)
 import { randomUUID } from "crypto";
 import { createClient } from "@/lib/supabase/server";
 import { denyUnlessFeature } from "@/lib/requireFeature";
+import { getCreditState, creditGate, spendCredits, voiceCost } from "@/lib/credits";
 import { generateSpeech } from "@/core/openrouter/tts";
 import { chunkScript, estimateDurationSeconds, MAX_SCRIPT_CHARS } from "@/domains/voice-studio/chunk";
 import { isValidVoice, DEFAULT_VOICE } from "@/domains/voice-studio/voices";
@@ -30,6 +31,14 @@ export async function POST(req: NextRequest) {
         { error: `Script too long. Max ${MAX_SCRIPT_CHARS} characters (~10 min of audio) per generation.` },
         { status: 400 }
       );
+    }
+
+    // Cost scales with length: 1 credit per 1,000 characters.
+    const cost = voiceCost(script.length);
+    const creditState = await getCreditState(user.id);
+    const gate = creditGate(creditState, cost);
+    if (!gate.ok) {
+      return NextResponse.json({ error: gate.error }, { status: gate.status });
     }
 
     const chunks = chunkScript(script);
@@ -62,6 +71,8 @@ export async function POST(req: NextRequest) {
     if (dbError) {
       logError("VOICE_STUDIO_DB", dbError);
     }
+
+    await spendCredits(user.id, cost, creditState);
 
     return NextResponse.json({
       ok: true,

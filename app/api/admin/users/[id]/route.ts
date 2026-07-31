@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { FE_SEED_CREDITS, PLANS, type PlanType } from "@/lib/plans";
 import { OTO_CATALOG, type OtoId } from "@/lib/features";
+import { OTO_CREDIT_GRANTS } from "@/lib/credits";
 
 const VALID_OTO_IDS = new Set(OTO_CATALOG.map((o) => o.id));
 const VALID_PLAN_TYPES = new Set(Object.keys(PLANS));
@@ -95,30 +96,57 @@ export async function PATCH(
       updates.role = role;
     }
 
+    let normalizedOtos: string[] | undefined;
     if (unlocked_otos !== undefined) {
       const normalized = normalizeUnlockedOtos(unlocked_otos);
       if ("error" in normalized) {
         return NextResponse.json({ error: normalized.error }, { status: 400 });
       }
+      normalizedOtos = normalized;
       updates.unlocked_otos = normalized;
     }
 
-    // When granting FE: seed video_engine_credits to at least FE_SEED_CREDITS (100)
-    if (updates.plan_type === "fe") {
+    // Credit grants: FE seed + per-OTO lifetime credit/clip grants (idempotent —
+    // only grants for OTOs newly added in this request, and FE seed only once).
+    const grantingFe = updates.plan_type === "fe";
+    if (grantingFe || normalizedOtos !== undefined) {
       const { data: target } = await supabase
         .from("profiles")
-        .select("video_engine_credits")
+        .select("video_engine_credits, ai_video_credits, unlocked_otos, plan_type")
         .eq("id", userIdToUpdate)
         .single();
 
-      const currentCredits =
+      let creditBalance =
         typeof target?.video_engine_credits === "number"
           ? target.video_engine_credits
           : 0;
+      let videoBalance =
+        typeof target?.ai_video_credits === "number"
+          ? target.ai_video_credits
+          : 0;
 
-      if (currentCredits < FE_SEED_CREDITS) {
-        updates.video_engine_credits = FE_SEED_CREDITS;
+      // FE seed: only if not already FE and below the seed floor
+      if (grantingFe && target?.plan_type !== "fe" && creditBalance < FE_SEED_CREDITS) {
+        creditBalance = FE_SEED_CREDITS;
       }
+
+      // Per-OTO grants for newly-added OTOs only
+      if (normalizedOtos !== undefined) {
+        const existing = Array.isArray(target?.unlocked_otos)
+          ? (target!.unlocked_otos as string[]).map((o) => o.toLowerCase())
+          : [];
+        const newlyAdded = normalizedOtos.filter((o) => !existing.includes(o));
+        for (const otoId of newlyAdded) {
+          const grant = OTO_CREDIT_GRANTS[otoId];
+          if (grant) {
+            creditBalance += grant.credits;
+            videoBalance += grant.aiVideo;
+          }
+        }
+      }
+
+      updates.video_engine_credits = creditBalance;
+      updates.ai_video_credits = videoBalance;
     }
 
     if (Object.keys(updates).length === 0) {

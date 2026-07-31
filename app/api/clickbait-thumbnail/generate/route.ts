@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { denyUnlessFeature } from "@/lib/requireFeature";
+import { getCreditState, creditGate, spendCredits, CREDIT_COST } from "@/lib/credits";
 import { callAI } from "@/lib/openrouter";
 import { buildClickbaitPromptRequest } from "@/domains/clickbait-thumbnail/prompt";
 import { persistRemoteImageSafe } from "@/lib/persistRemoteImage";
@@ -23,6 +24,12 @@ export async function POST(req: Request) {
 
     if (!videoType || !topic?.trim()) {
       return NextResponse.json({ error: "Missing required fields" }, { status: 400 });
+    }
+
+    const creditState = await getCreditState(user.id);
+    const gate = creditGate(creditState, CREDIT_COST.clickbait);
+    if (!gate.ok) {
+      return NextResponse.json({ error: gate.error }, { status: gate.status });
     }
 
     // Optional template pack (ClickBoost)
@@ -130,6 +137,8 @@ export async function POST(req: Request) {
     if (dbError) {
       console.error("Failed to save clickbait thumbnail history:", dbError);
     }
+
+    await spendCredits(user.id, CREDIT_COST.clickbait, creditState);
 
     return NextResponse.json({
       imageUrl,
