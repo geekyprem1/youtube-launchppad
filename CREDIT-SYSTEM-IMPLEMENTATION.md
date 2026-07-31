@@ -35,7 +35,7 @@
 | 1 thumbnail image (Z-Image + Gemini prompt) | ~$0.007 | **2** | ~3× |
 | 1 clickbait (2 A/B variants) | ~$0.012 | **3** | ~2.5× |
 | 1,000 voice chars (Kokoro) | ~$0.001 | **1** | 10× |
-| **1 AI video, 10s 720p (p-video)** | **$0.20** | **25** | 1.25× |
+| **1 AI video, 10s 720p (p-video)** | **$0.20** | **1 clip** (ai_video_credits) | — |
 | 1 AI video, 10s 720p **draft** | $0.05 | **8** | 1.6× |
 
 > Video clips ko credits ke alawa ek **separate lifetime clip counter** se bhi cap karo (double safety).
@@ -76,10 +76,10 @@ Grant credits when an OTO is unlocked. Extend `app/api/admin/users/[id]/route.ts
 | OTO6 ViralPredict | $37 | $16.65 | **220** | 0 | $2.20 | 13% |
 | OTO7 WatchTime MAX | $29 | $13.05 | **180** | 0 | $1.80 | 14% |
 | OTO8 Creator Toolkit X | $39 | $17.55 | **220** | 0 | $2.20 | 13% |
-| OTO9 Faceless Empire | $79 | $35.55 | **500** | **5 clips** | ~$6.25 | 18% |
+| OTO9 Faceless Empire | $79 | $35.55 | **500** | **32 clips** | ~$7.90 | 22% |
 | OTO10 MoneyFlow | $49 | $22.05 | **250** | 0 | $2.50 | 11% |
 | OTO11 Profit Accelerator | $69 | $31.05 | **350** | 0 | $3.50 | 11% |
-| OTO12 Infinity | $169 | $76.05 | **1200** | **10 clips** | ~$14.50 | 19% |
+| OTO12 Infinity | $169 | $76.05 | **1200** | **60 clips** | ~$15.60 | 20% |
 
 > Credits are **lifetime pool** (no monthly refill). Top-up path = future OTO14.
 > `ai_video_credits` = number of full-render 10s clips (each also decrements 25 from `credits`, OR treat clips as a standalone counter — pick one; recommended: **clips counter only** for video, `credits` only for text/image/voice, so video never drains the text pool).
@@ -270,5 +270,5 @@ back in `getCreditState` (lib/credits.ts), `getVideoEngineCreditState` (lib/vide
 
 If every buyer burned their **entire** lifetime pool at worst-case rates:
 - Text/image/voice OTOs: COGS 11–17% of net → healthy.
-- Video OTOs (OTO9 $6.25 / OTO12 $14.50): 18–19% of net → still safe.
+- Video OTOs (OTO9: 32 clips = $6.40; OTO12: 60 clips = $12.00): combined ~20–22% of net → still safe.
 - Real-world usage is far lower (most credits never fully burned), so effective COGS ≈ 3–6% of net.
